@@ -100,8 +100,8 @@ pub fn register ( appdetails : AppDetails ) -> ( SafeRegisterResp ) {
 	let resp = http::handle()
 		.post( url, &payload )
 		.header("Content-Type", "application/json")
-		.exec().unwrap();
-
+		.exec().unwrap_or_else(|e| { panic!("Couldn't connect to launcher - make sure the Safe launcher is running "); } );
+		
 	// Handle the response recieved from the launcher
 
 	  //println!("code={}; headers={:?}; body={:?}",
