@@ -1,0 +1,11 @@
+[package]
+name = "rsafe"
+version = "0.1.0"
+authors = ["nice"]
+
+[dependencies]
+curl ="*"
+sodiumoxide = "*"
+rustc-serialize = "*"
+base64 ="*"
+"url" ="*"
