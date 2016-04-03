@@ -19,16 +19,54 @@ fn main() {
 
 	// register our app with the safe launcher
 	let safe_register_resp = auth::register( appdetails );
-
-	// --------------------------------------------------------------------------------
-	//                         Test Token
-	// --------------------------------------------------------------------------------
-	print!("App: Testing Token... ");
 	
-	let auth_check = auth::check ( &safe_register_resp );
-	
-	println! ( "{}", auth_check );
+	match safe_register_resp {
+		Err(e) => {
+	        println!("{:?}\nUnable to Connect to Launcher \nMake sure Safe Launcher is running", e); 
+	    },
+	    Ok(val) => {
+	        println!("Succesfully Registered");
+	        
+        	// --------------------------------------------------------------------------------
+			//                         Test Token
+			// --------------------------------------------------------------------------------
+			print!("App: Testing Token... ");
+	        
+	        let auth_check = auth::check ( &val );
+	        println! ( "{:?}", auth_check );
+	      
+	        // --------------------------------------------------------------------------------	
+			//                         Do Something
+			// --------------------------------------------------------------------------------
+			
+			println! ("Hellooo!");
+				
+			// hit a key to quit
+			let mut enter = String::new();
+			println! ("Press enter to quit");
+			io::stdin().read_line(&mut enter)
+			.expect("Failed to read line");
+			
+			// --------------------------------------------------------------------------------
+			//                         Clear Token
+			// --------------------------------------------------------------------------------
+			print!("App: Releasing Token... ");
+			
+			let deauth = auth::unregister ( &val );
+			
+			println! ( "quit {:?}", deauth );
+			
+			if deauth.unwrap() == 200 {
+				println!( "Token released, bye" );
+			}
+	        
+	        
+	        
+	    }
 
+	}
+
+/*
 	// --------------------------------------------------------------------------------
 	//                         Create a Directory - NFS operation
 	// --------------------------------------------------------------------------------
@@ -193,27 +231,8 @@ fn main() {
 	println!(" delete resp = {:?}", &nfs_delete_file );
 	
 	}
-	
-	// --------------------------------------------------------------------------------	
-	//                         Do Something
-	// --------------------------------------------------------------------------------
-	
-	println! ("Hellooo!");
-		
-	// hit a key to quit
-	let mut enter = String::new();
-	println! ("Press enter to quit");
-	io::stdin().read_line(&mut enter)
-	.expect("Failed to read line");
-	
-	// --------------------------------------------------------------------------------
-	//                         Clear Token
-	// --------------------------------------------------------------------------------
-	print!("App: Releasing Token... ");
-	
-	if auth::unregister ( &safe_register_resp ) == 200 {
-		println!( "Token released, bye" );
-	}
+*/	
+
 		return
 
 }

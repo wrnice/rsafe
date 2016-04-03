@@ -1,8 +1,10 @@
-use curl::http;
+//use curl::http;
 use rustc_serialize::json;
 use rustc_serialize::base64::ToBase64;
 use rustc_serialize::base64::FromBase64;
 use std;
+
+use std::collections::HashMap;
 
 #[derive(Debug, RustcEncodable)]
 struct App {
@@ -39,7 +41,7 @@ pub struct AppDetails {
 
 #[derive(Debug, RustcDecodable)]
 pub struct SafeRegisterResp {
-		pub code: u32,
+		pub code: u16,
 		pub token: String,
 		pub symm_key: ::sodiumoxide::crypto::secretbox::Key,
 		pub symm_nonce: ::sodiumoxide::crypto::secretbox::Nonce
@@ -54,17 +56,17 @@ fn get_base64_config() -> ::rustc_serialize::base64::Config {
 	}
 }
 
-pub fn register ( appdetails : AppDetails ) -> ( SafeRegisterResp ) {
-	
-	
+#[derive(Debug)]
+pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest }
+
+pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , ConnectionError > {
+		
 	let mut safe_register_resp = SafeRegisterResp {
 		code : 0,
 		token : String::new(),
 		symm_key : ::sodiumoxide::crypto::secretbox::gen_key(),
 		symm_nonce : ::sodiumoxide::crypto::secretbox::gen_nonce()
-	};
-		
-	let url = "http://localhost:8100/auth".to_string();
+	};	
 	
 	// Generate Asymmetric Key-Pair using sodiumoxide.
 	let (pub_key, priv_key) = ::sodiumoxide::crypto::box_::gen_keypair();
@@ -92,40 +94,35 @@ pub fn register ( appdetails : AppDetails ) -> ( SafeRegisterResp ) {
 		};
 		
 	// Encode the data to a JSON
-	let payload = ::rustc_serialize::json::encode(&data).unwrap();
-
-	//println!("payload = {}", &payload );
-
-	// Send a POST request to the SAFE Launcher using curl
-	let resp = http::handle()
-		.post( url, &payload )
-		.header("Content-Type", "application/json")
-		.exec().unwrap_or_else(|e| { panic!("Couldn't connect to launcher - make sure the Safe launcher is running "); } );
-		
-	// Handle the response recieved from the launcher
-
-	  //println!("code={}; headers={:?}; body={:?}",
-	 //resp.get_code(), resp.get_headers(), resp.get_body());
+	let payload = ::rustc_serialize::json::encode(&data).unwrap();		
 	
-	if resp.get_code() == 401 {
-	println!("Unauthorized"); 
-	} else if resp.get_code() == 400 {
-	println!("Fields are missing"); 
+	let url = "http://localhost:8100/auth";	
+
+	let mut headers: HashMap<String, String> = HashMap::new();
+	headers.insert("Content-Type".to_string(), "application/json".to_string());
+	headers.insert("Connection".to_string(), "close".to_string());
+	
+	println!("sending request");
+	//Send a request to launcher using the "request" extern crate	
+	let res = ::request::post(&url, &mut headers, &payload.into_bytes() );
+	
+	println!("request sent");		
+
+	//Error handling 
+	match res {		
+		//request couldn't connect
+		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		Ok(res) =>     
+	{
+	// Handle the response recieved from the launcher
+	if res.status_code == 401 {
+	println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+	} else if res.status_code == 400 {
+	println!("400 Fields are missing"); return Err(ConnectionError::FieldsAreMissing)
 	} else
 
 	{
-
-		// In curl, resp.get_body() will return a reference to a slice of unsigned 8 bit intgers &[u8].
-		// We need to turn those bytes into a unicode string slice.
-		let resp_body = std::str::from_utf8(resp.get_body()).unwrap_or_else(|e| {
-		panic!("Failed to parse response ");
-		});
-
-		//println!( "Body = {}", &resp_body );
-
-
-
-		let launcher_response_data: LauncherResponseData = json::decode(&resp_body).ok().unwrap();
+		let launcher_response_data: LauncherResponseData = json::decode(&res.body).ok().unwrap();
 
 		//Our authorization token
 		let ourtoken = launcher_response_data.token;
@@ -167,72 +164,90 @@ pub fn register ( appdetails : AppDetails ) -> ( SafeRegisterResp ) {
 		}
 		for it in vec_decrypted_symm_key_nonce.iter().skip(::sodiumoxide::crypto::secretbox::KEYBYTES).enumerate() {
 			symm_nonce.0[it.0] = *it.1;
-		}
+		}		
 		
+		//update result
 		
-		//update struct
-		
-		
-			safe_register_resp.code = resp.get_code();
-			safe_register_resp.token = ourtoken;
-			safe_register_resp.symm_key = symm_key;
-			safe_register_resp.symm_nonce = symm_nonce;
-		
-		
+		safe_register_resp.code = res.status_code;
+		safe_register_resp.token = ourtoken;
+		safe_register_resp.symm_key = symm_key;
+		safe_register_resp.symm_nonce = symm_nonce;		
 	
 	}	
-	
-	
-		return safe_register_resp;
-	
+		return Ok(safe_register_resp);
+	}
+};
 }
 
-pub fn check ( safe_register_resp : &SafeRegisterResp ) -> ( u32 ) {
+pub fn check ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
+	let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;
+	
+	let url = "http://localhost:8100/auth";	
+
+	let mut headers: HashMap<String, String> = HashMap::new();
+	headers.insert("Authorization".to_string(), bearertoken );
+	headers.insert("Connection".to_string(), "close".to_string());
+	
+	println!("sending request");
+	//Send a request to launcher using the "request" extern crate	
+	let res_token = ::request::get(&url, &mut headers );
+	
+	println!("request sent");	
+	
+	//Error handling 
+	match res_token {		
+		//request couldn't connect
+		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		Ok(res_token) =>     
+	{
+		// Handle the response recieved from the launcher
+		if res_token.status_code == 401 {
+		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+		} else if res_token.status_code == 400 {
+		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+		} else	{ return Ok(res_token.status_code) }
+	}
+};
+}
+
+pub fn unregister ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , ConnectionError > {
+
 	let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;
 	
 	let url = "http://localhost:8100/auth".to_string();
 
-	let resp_token = http::handle()
-	.get( url )
-	.header("Authorization", &bearertoken )
-	.exec().unwrap();
-
-	// Handle the response recieved from the launcher		
-/*	
-	if resp_token.get_code() == 200 {
-		print!("200 OK ...Token is valid");
-	} else if resp_token.get_code() == 400 {
-		println!("401 Bad Request"); 
-	} else if resp_token.get_code() == 401 {
-		println!("401 Unauthorized"); 
+	//let resp_token = http::handle()
+	//.delete( url2 )
+	//.header("Authorization", &bearertoken )
+	//.exec().unwrap();
+	
+	let mut headers: HashMap<String, String> = HashMap::new();
+	headers.insert("Authorization".to_string(), bearertoken );
+	headers.insert("Connection".to_string(), "close".to_string());
+	
+	println!("sending request");
+	//Send a request to launcher using the "request" extern crate	
+	let res_token = ::request::delete(&url, &mut headers );
+	
+	println!("request sent");
+	
+	//Error handling 
+	match res_token {		
+	//request couldn't connect
+		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		Ok(res_token) =>     
+	{
+		// Handle the response recieved from the launcher
+		if res_token.status_code == 401 {
+		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+		} else if res_token.status_code == 400 {
+		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+		} else	{ return Ok(res_token.status_code) }
 	}
-*/
-	return resp_token.get_code();
-}
+};
 
-pub fn unregister ( safe_register_resp : &SafeRegisterResp ) -> ( u32 ) {
 
-		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;
-		
-		let url2 = "http://localhost:8100/auth".to_string();
-
-		let resp_token = http::handle()
-		.delete( url2 )
-		.header("Authorization", &bearertoken )
-		.exec().unwrap();
-
-		// Handle the response recieved from the launcher		
-/*	
-		if resp_token.get_code() == 200 {
-			print!("200 OK ...Token was cleared");
-		} else if resp_token.get_code() == 400 {
-			println!("401 Bad Request"); 
-		} else if resp_token.get_code() == 401 {
-			println!("401 Unauthorized"); 
-		}
-*/
-		return resp_token.get_code();
 }
 
 
