@@ -1,4 +1,3 @@
-//use curl::http;
 use rustc_serialize::json;
 use rustc_serialize::base64::ToBase64;
 use rustc_serialize::base64::FromBase64;

@@ -20,11 +20,15 @@ fn main() {
 	// register our app with the safe launcher
 	let safe_register_resp = auth::register( appdetails );
 	
+	//handle errors
 	match safe_register_resp {
 		Err(e) => {
 	        println!("{:?}\nUnable to Connect to Launcher \nMake sure Safe Launcher is running", e); 
 	    },
 	    Ok(val) => {
+			// --------------------------------------------------------------------------------
+			//                         We are Registered, let us play with Safe
+			// --------------------------------------------------------------------------------
 	        println!("Succesfully Registered");
 	        
         	// --------------------------------------------------------------------------------
@@ -62,9 +66,9 @@ fn main() {
 	        
 	        
 	        
-	    }
+	    } // end of Ok(val)
 
-	}
+	} // end of match
 
 /*
 	// --------------------------------------------------------------------------------
