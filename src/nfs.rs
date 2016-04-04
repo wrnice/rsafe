@@ -3,6 +3,7 @@ use rustc_serialize::base64::ToBase64;
 use rustc_serialize::base64::FromBase64;
 use std;
 
+use std::collections::HashMap;
 
 #[derive(Debug, RustcEncodable)]
 pub struct CreateDirData {
@@ -94,15 +95,16 @@ pub struct GetFileResponseHeaders {
 }
 */
 
-pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> ( u32 ) {
+#[derive(Debug)]
+pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest, UnknownError, InternalServerError, NotFound }
+
+pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
 		let symm_key = &safe_register_resp.symm_key;
 		let symm_nonce = &safe_register_resp.symm_nonce;
 		
 		let bearertoken = "Bearer ".to_string()+&token ;
-
-		let url_nfs = "http://localhost:8100/nfs/directory";
 		
 		println!("App: Begin creating directory...");
 			
@@ -122,35 +124,47 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 		
 		//println!( "encr = {}", &create_dir_json_encrypted_b64 );
 	
-		// Send a POST request to the SAFE Launcher using curl
-
-		let resp_create_dir = http::handle()
-		.post( url_nfs, &create_dir_json_encrypted_b64 )
-		.header("Authorization", &bearertoken )
-		.header("Content-Type", "text/plain")
-		.exec().unwrap();
-
-		// Handle the response recieved from the launcher		
+		let url_nfs = "http://localhost:8100/nfs/directory";
 		
-		if resp_create_dir.get_code() == 200 {
-			println!("200 OK ...Directory was created");
-		} else if resp_create_dir.get_code() == 400 {
-			println!("401 Bad Request"); 
-		} else if resp_create_dir.get_code() == 401 {
-			println!("401 Unauthorized"); 
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Content-Type".to_string(), "application/json".to_string());
+		headers.insert("Connection".to_string(), "close".to_string());
+	
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::post(&url_nfs, &mut headers, &create_dir_json_encrypted_b64.into_bytes() );
+		
+		println!("request sent");
+				
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+			println!("code = {:?} " , res.status_code );
+			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 202 {
+			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else { return Err(ConnectionError::UnknownError) }
 		}
-	
-	return resp_create_dir.get_code();
-
-	
-	
+};
 }
 
-pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> ( GetDirResponseData ) {
+pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< GetDirResponseData, ConnectionError > {
 
 		println!("App: Begin reading directory...");	
 		
-		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
+		
 		
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
@@ -162,36 +176,41 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 		//println!("dirPath = {}",&dir_path);
 		
 		// URL to send our 'ls' request to
-		let url_nfs_ls = url_nfs + "/" + &dir_path + "/" + &is_path_shared.to_string();
+		
+		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
+		let url_nfs_ls = url_nfs + "/" + &dir_path + "/" + &is_path_shared.to_string();			
 		//println!("url_nfs_ls = {}",&url_nfs_ls);
+		
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Connection".to_string(), "close".to_string());
+		
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::get(&url_nfs_ls, &mut headers );
+		
+		println!("request sent");
+				
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+		//println!("code = {:?} " , res.status_code );
+			
+		// Handle the response recieved from the launcher
+		if res.status_code == 401 {
+		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+		} else if res.status_code == 400 {
+		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+		} else if res.status_code == 500 {
+		println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+		} else if res.status_code == 200 {
+		println!("200 Ok"); { 
 	
-		// Send a GET request to the SAFE Launcher using curl
-
-		let resp_ls_dir = http::handle()
-		.get( url_nfs_ls )
-		.header("Authorization", &bearertoken )
-		.header("Content-Type", "text/plain")
-		.exec().unwrap();
-	
-		//println!("resp-ls-dir {:?}", resp_ls_dir.get_code() );
-	
-		/*
-		 * 
-		 *  TODO :  change this
-		 * 
-		 * 
-		 *    handle the errors
-		 * 
-		 * 
-		 * 
-		 */
-		//display_returned_code (resp_ls_dir.get_code());
-		//if resp_ls_dir.get_code() == 200 {
-		//println!("... Directory was read");	
-
-		// In curl, resp_ls_dir.get_body() will return a reference to a slice of unsigned 8 bit intgers &[u8].
-		// We need to turn those bytes into a unicode string slice.
-		let resp_ls_dir_enc_b64 = std::str::from_utf8(resp_ls_dir.get_body()).unwrap_or_else(|e| panic!("Failed to parse response {:?}", e));
+		let resp_ls_dir_enc_b64 = res.body;
 		
 		//println!( "enc_b64 = {}", &resp_ls_dir_enc_b64 );
 
@@ -215,20 +234,20 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 		// stated in the RFC.
 		let get_dir_response: GetDirResponseData = ::rustc_serialize::json::decode(&decrypted_response_json_str)
 																 .unwrap_or_else(|e| panic!("{:?}", e));
-		println!("App: GetDir Response decoded.");
-
+		println!("App: GetDir Response decoded.");	
+			
+		return Ok(get_dir_response) }
 		
-		return get_dir_response;
+		} else { return Err(ConnectionError::UnknownError) }
+	}  
 
-	
-}
+};	//match end
+}	//fn end
 
-pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> ( u32 ) {
+pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
 		println!("App: Begin deleting directory...");	
-		
-		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
-		
+					
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
 		// path Parameters
@@ -239,40 +258,53 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 		println!("dirPath = {}",&dir_path);
 		
 		// URL to send our 'ls' request to
+		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
 		let url_nfs_del = url_nfs + "/" + &dir_path + "/" + &is_path_shared.to_string();
-		println!("url_nfs_ls = {}",&url_nfs_del);
-	
-		// Send a GET request to the SAFE Launcher using curl
-
-		let resp_ls_dir = http::handle()
-		.delete( url_nfs_del )
-		.header("Authorization", &bearertoken )
-		.exec().unwrap();
-	
-		// Handle the response recieved from the launcher
-
-		//println!("delete resp code {}", resp_ls_dir.get_code() );
-
-		if resp_ls_dir.get_code() == 200 {
-			println!("200 OK... Directory was deleted");
-		}
-		return resp_ls_dir.get_code();
-	
-}
-
-pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> ( u32 ) {
-	
-		println!("App: Begin creating file...");
+		//println!("url_nfs_ls = {}",&url_nfs_del);
 		
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Connection".to_string(), "close".to_string());
+		
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::delete(&url_nfs_del, &mut headers );
+		
+		println!("request sent");
+					
+		//Error handling 
+		match res {		
+		//request couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+			//println!("code = {:?} " , res.status_code );
+			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 202 {
+			println!("202 Accepted Directory was deleted");		{ return Ok(res.status_code) }
+			} else { return Err(ConnectionError::UnknownError) }
+		}
+};
+	
+} // fn end
+
+pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
+	
 		let token = &safe_register_resp.token ;
 		let symm_key = &safe_register_resp.symm_key;
 		let symm_nonce = &safe_register_resp.symm_nonce;
 		
 		let bearertoken = "Bearer ".to_string()+&token ;
-
-		let url_nfs = "http://localhost:8100/nfs/file".to_string();
 		
-		//println!("create_file_data = {:?}", create_file_data );
+		println!("App: Begin creating file...");
 		
 		// Encode the request as a JSON.
 		let create_file_json_str = ::rustc_serialize::json::encode(&create_file_data).unwrap_or_else(|a| panic!("{:?}", a));
@@ -289,55 +321,56 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 		let create_file_json_encrypted_b64 = create_file_encrypted_bytes.to_base64(get_base64_config());
 		
 		//println!( "encr = {}", &create_file_json_encrypted_b64 );
-	
-		// Send a POST request to the SAFE Launcher using curl
-
-		let resp_create_file = http::handle()
-		.post( url_nfs, &create_file_json_encrypted_b64 )
-		.header("Authorization", &bearertoken )
-		.header("Content-Type", "text/plain")
-		.exec().unwrap();
-
-		// Handle the response recieved from the launcher		
 		
-		if resp_create_file.get_code() == 200 {
-			println!("200 OK ...File was created");
-		} else if resp_create_file.get_code() == 400 {
-			println!("401 Bad Request"); 
-		} else if resp_create_file.get_code() == 401 {
-			println!("401 Unauthorized"); 
+		let url_nfs_file = "http://localhost:8100/nfs/file".to_string();
+		
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Content-Type".to_string(), "application/json".to_string());
+		headers.insert("Connection".to_string(), "close".to_string());
+	
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::post(&url_nfs_file, &mut headers, &create_file_json_encrypted_b64.into_bytes() );
+		
+		println!("request sent");
+		
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+			println!("code = {:?} " , res.status_code );
+			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 404 {
+			println!("404 Not Found"); return Err(ConnectionError::NotFound)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 202 {
+			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else { return Err(ConnectionError::UnknownError) }
 		}
-	
-	return resp_create_file.get_code();
-
-	
-	
+};
 }
 
-pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> ( u32 ) {
+pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
 		let symm_key = &safe_register_resp.symm_key;
 		let symm_nonce = &safe_register_resp.symm_nonce;
 		
 		let bearertoken = "Bearer ".to_string()+&token ;
-
-		let url_nfs2 = "http://localhost:8100/nfs/file".to_string();
 		
 		let fileContent = write_file_data.fileContent;
 		
 		println!("App: Begin writing to file...");
-		
-		// path Parameters
-		let requested_file = write_file_data.filePath ;
-		let file_path = ::url::percent_encoding::utf8_percent_encode ( &requested_file, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
-		let is_path_shared = write_file_data.isPathShared;
-		
-		//println!("dirPath = {}",&dir_path);
-		
-		// URL to send our 'ls' request to
-		let url_nfs_write = url_nfs2 + "/" + &file_path + "/" + &is_path_shared.to_string();
-		//println!("url_nfs_ls = {}",&url_nfs_ls);
 			
 		// Encode the request as a JSON.
 		let write_file_json_str = ::rustc_serialize::json::encode(&fileContent).unwrap_or_else(|a| panic!("{:?}", a));
@@ -354,34 +387,60 @@ pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &supe
 		let write_file_json_encrypted_b64 = write_file_encrypted_bytes.to_base64(get_base64_config());
 		
 		//println!( "encr = {}", &create_dir_json_encrypted_b64 );
-	
-		// Send a PUT request to the SAFE Launcher using curl
-
-		let resp_write_file = http::handle()
-		.put( url_nfs_write, &write_file_json_encrypted_b64 )
-		.header("Authorization", &bearertoken )
-		.header("Content-Type", "text/plain")
-		.exec().unwrap();
-
-		// Handle the response recieved from the launcher		
 		
-		if resp_write_file.get_code() == 200 {
-			println!("200 OK ...File was updated");
-		} else if resp_write_file.get_code() == 400 {
-			println!("401 Bad Request"); 
-		} else if resp_write_file.get_code() == 401 {
-			println!("401 Unauthorized"); 
-		}
-	
-	return resp_write_file.get_code();
-}
-
-pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> ( String ) {
-
-		println!("App: Begin reading file...");	
+		// path Parameters
+		let requested_file = write_file_data.filePath ;
+		let file_path = ::url::percent_encoding::utf8_percent_encode ( &requested_file, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
+		let is_path_shared = write_file_data.isPathShared;
+		
+		//println!("dirPath = {}",&dir_path);
+		
+		// URL to send our 'ls' request to
 		
 		let url_nfs = "http://localhost:8100/nfs/file".to_string();
+		let url_nfs_write = url_nfs + "/" + &file_path + "/" + &is_path_shared.to_string();
+		//println!("url_nfs_ls = {}",&url_nfs_write);
+	
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Content-Type".to_string(), "application/json".to_string());
+		headers.insert("Connection".to_string(), "close".to_string());
+	
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::put(&url_nfs_write, &mut headers, &write_file_json_encrypted_b64.into_bytes() );
 		
+		println!("request sent");
+
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+			println!("code = {:?} " , res.status_code );
+			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 404 {
+			println!("404 Not Found"); return Err(ConnectionError::NotFound)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 202 {
+			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else { return Err(ConnectionError::UnknownError) }
+		}
+};
+}
+
+pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result<  String , ConnectionError > {
+
+		println!("App: Begin reading file...");			
+			
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
 		// path Parameters
@@ -398,41 +457,45 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		 *   --> length
 		 * 
 		 * 
-		 * */
-		
-		//println!("dirPath = {}",&dir_path);
+		 */
 		
 		// URL to send our 'ls' request to
+		
+		let url_nfs = "http://localhost:8100/nfs/file".to_string();
 		let url_nfs_read = url_nfs + "/" + &file_path + "/" + &is_path_shared.to_string();
-		//println!("url_nfs_ls = {}",&url_nfs_ls);
+		//println!("url_nfs_read = {}",&url_nfs_ls);
 	
-		// Send a GET request to the SAFE Launcher using curl
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Content-Type".to_string(), "application/json".to_string());
+		headers.insert("Connection".to_string(), "close".to_string());
+	
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::get( &url_nfs_read, &mut headers );
+		
+		println!("request sent");
+	
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+		//println!("code = {:?} " , res.status_code );
+			
+		// Handle the response recieved from the launcher
+		if res.status_code == 401 {
+		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+		} else if res.status_code == 400 {
+		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+		} else if res.status_code == 500 {
+		println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+		} else if res.status_code == 200 {
+		println!("200 Ok"); { 	
 
-		let resp_read_file = http::handle()
-		.get( url_nfs_read)
-		.header("Authorization", &bearertoken )
-		.header("Content-Type", "text/plain")
-		.exec().unwrap();
-	
-		//println!("resp-ls-dir {:?}", resp_ls_dir.get_code() );
-	
-		/*
-		 * 
-		 *  TODO :  change this
-		 * 
-		 * 
-		 *    handle errors
-		 * 
-		 * 
-		 * 
-		 */
-		//display_returned_code (resp_ls_dir.get_code());
-		//if resp_ls_dir.get_code() == 200 {
-		//println!("... Directory was read");	
-
-		// In curl, resp_ls_dir.get_body() will return a reference to a slice of unsigned 8 bit intgers &[u8].
-		// We need to turn those bytes into a unicode string slice.
-		let resp_read_file_enc_b64 = std::str::from_utf8(resp_read_file.get_body()).unwrap_or_else(|e| panic!("Failed to parse response {:?}", e));
+		let resp_read_file_enc_b64 = res.body;
 		
 		//println!( "enc_b64 = {}", &resp_ls_dir_enc_b64 );
 
@@ -459,6 +522,10 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		println!("App: GetFile Response decoded.");
 		
 		/*
+		 * 
+		 *   TODO
+		 * 
+		 * 
 		//get headers
 		let resp_read_file_headers = resp_read_file.get_headers();
 		
@@ -468,16 +535,16 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 																 .unwrap_or_else(|e| panic!("{:?}", e));
 		*/
 		
-		return read_file_resp_body;
-
+		return Ok(read_file_resp_body); }
 	
-}
+		} else { return Err(ConnectionError::UnknownError) } // if end		
+	} 
+};//match end
+} //fn end
 
-pub fn delete_file ( delete_file_data : ReadFileData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> ( u32 ) {
+pub fn delete_file ( delete_file_data : ReadFileData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
-		println!("App: Begin deleting file...");	
-		
-		let url_nfs3 = "http://localhost:8100/nfs/file".to_string();
+		println!("App: Begin deleting file...");			
 		
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
@@ -489,23 +556,43 @@ pub fn delete_file ( delete_file_data : ReadFileData, safe_register_resp : &supe
 		println!("filePath = {}",&file_path);
 		
 		// URL to send our 'ls' request to
-		let url_nfs_del = url_nfs3 + "/" + &file_path + "/" + &is_path_shared.to_string();
-		println!("url_nfs_ls = {}",&url_nfs_del);
+		
+		let url_nfs = "http://localhost:8100/nfs/file".to_string();
+		let url_nfs_del = url_nfs + "/" + &file_path + "/" + &is_path_shared.to_string();
+		//println!("url_nfs_ls = {}",&url_nfs_del);
 	
-		// Send a GET request to the SAFE Launcher using curl
-
-		let resp_ls_dir = http::handle()
-		.delete( url_nfs_del )
-		.header("Authorization", &bearertoken )
-		.exec().unwrap();
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Connection".to_string(), "close".to_string());
+		
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::delete(&url_nfs_del, &mut headers );
 	
-		// Handle the response recieved from the launcher
-
-		//println!("delete resp code {}", resp_ls_dir.get_code() );
-
-		if resp_ls_dir.get_code() == 200 {
-			println!("200 OK... File was deleted");
+		println!("request sent");
+				
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+			println!("code = {:?} " , res.status_code );
+			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 404 {
+			println!("404 Not Found"); return Err(ConnectionError::NotFound)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 202 {
+			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else { return Err(ConnectionError::UnknownError) }
 		}
-		return resp_ls_dir.get_code();
-	
+};
 }
+

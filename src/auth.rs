@@ -56,7 +56,7 @@ fn get_base64_config() -> ::rustc_serialize::base64::Config {
 }
 
 #[derive(Debug)]
-pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest }
+pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest, UnknownError }
 
 pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , ConnectionError > {
 		
@@ -118,9 +118,11 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 	println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
 	} else if res.status_code == 400 {
 	println!("400 Fields are missing"); return Err(ConnectionError::FieldsAreMissing)
-	} else
+	} else if res.status_code == 200
+			
 
-	{
+	{	println!("200 Ok");	
+		
 		let launcher_response_data: LauncherResponseData = json::decode(&res.body).ok().unwrap();
 
 		//Our authorization token
@@ -170,12 +172,14 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 		safe_register_resp.code = res.status_code;
 		safe_register_resp.token = ourtoken;
 		safe_register_resp.symm_key = symm_key;
-		safe_register_resp.symm_nonce = symm_nonce;		
+		safe_register_resp.symm_nonce = symm_nonce;	
+		
+		return Ok(safe_register_resp);	
 	
-	}	
-		return Ok(safe_register_resp);
+	}  else { return Err(ConnectionError::UnknownError) }	
+		
 	}
-};
+};  //match end
 }
 
 pub fn check ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , ConnectionError > {
@@ -190,22 +194,24 @@ pub fn check ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , Connect
 	
 	println!("sending request");
 	//Send a request to launcher using the "request" extern crate	
-	let res_token = ::request::get(&url, &mut headers );
+	let res = ::request::get(&url, &mut headers );
 	
 	println!("request sent");	
 	
 	//Error handling 
-	match res_token {		
-		//request couldn't connect
+	match res {		
+		// couldn't connect
 		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
-		Ok(res_token) =>     
+		Ok(res) =>     
 	{
 		// Handle the response recieved from the launcher
-		if res_token.status_code == 401 {
+		if res.status_code == 401 {
 		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
-		} else if res_token.status_code == 400 {
+		} else if res.status_code == 400 {
 		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
-		} else	{ return Ok(res_token.status_code) }
+		} else if res.status_code == 200 {
+		println!("200 Ok");		{ return Ok(res.status_code) }
+		} else { return Err(ConnectionError::UnknownError) }
 	}
 };
 }
@@ -216,11 +222,6 @@ pub fn unregister ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , Co
 	
 	let url = "http://localhost:8100/auth".to_string();
 
-	//let resp_token = http::handle()
-	//.delete( url2 )
-	//.header("Authorization", &bearertoken )
-	//.exec().unwrap();
-	
 	let mut headers: HashMap<String, String> = HashMap::new();
 	headers.insert("Authorization".to_string(), bearertoken );
 	headers.insert("Connection".to_string(), "close".to_string());
@@ -235,14 +236,16 @@ pub fn unregister ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , Co
 	match res_token {		
 	//request couldn't connect
 		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
-		Ok(res_token) =>     
+		Ok(res) =>     
 	{
 		// Handle the response recieved from the launcher
-		if res_token.status_code == 401 {
+		if res.status_code == 401 {
 		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
-		} else if res_token.status_code == 400 {
+		} else if res.status_code == 400 {
 		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
-		} else	{ return Ok(res_token.status_code) }
+		} else if res.status_code == 200 {
+		println!("200 Ok");		{ return Ok(res.status_code) }
+		} else { return Err(ConnectionError::UnknownError) }
 	}
 };
 
