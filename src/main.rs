@@ -25,7 +25,7 @@ fn main() {
 		Err(e) => {
 	        println!("{:?}\nUnable to Connect to Launcher \nMake sure Safe Launcher is running", e); 
 	    },
-	    Ok(val) => {
+	    Ok(credentials) => {
 			// --------------------------------------------------------------------------------
 			//                         We are Registered, let us play with Safe
 			// --------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ fn main() {
 			// --------------------------------------------------------------------------------
 			print!("App: Testing Token... ");
 	        
-	        let auth_check = auth::check ( &val );
+	        let auth_check = auth::check ( &credentials );
 	        println! ( "{:?}", auth_check );
 		
 			// --------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ fn main() {
 				if createdir 
 			{
 			
-			let nfs_create_dir = nfs::create_dir ( create_dir_data, &val );
+			let nfs_create_dir = nfs::create_dir ( create_dir_data, &credentials );
 			println! ( "{:?}", nfs_create_dir );
 			}	
 	
@@ -83,7 +83,7 @@ fn main() {
 			isPathShared: false
 			};
 			
-			let nfs_read_dir = nfs::read_dir ( read_dir_data, &val );
+			let nfs_read_dir = nfs::read_dir ( read_dir_data, &credentials );
 			println!(" ls resp = {:?}", nfs_read_dir );
 			
 		}
@@ -105,7 +105,7 @@ fn main() {
 			isPathShared: false
 			};
 			
-			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &val );			
+			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &credentials );			
 			println!(" delete resp = {:?}", &nfs_delete_dir );
 			
 			}	
@@ -135,7 +135,7 @@ fn main() {
 				if createfile
 			{
 			
-			let nfs_create_file = nfs::create_file ( create_file_data, &val );
+			let nfs_create_file = nfs::create_file ( create_file_data, &credentials );
 			println!(" create file = {:?}", &nfs_create_file );
 			}
 
@@ -155,7 +155,7 @@ fn main() {
 			fileContent : "This is just a sample text!!!".to_string()
 			};
 			
-			let nfs_write_file = nfs::write_file ( write_file_data, &val );
+			let nfs_write_file = nfs::write_file ( write_file_data, &credentials );
 			println!(" write file = {:?}", &nfs_write_file );
 			
 		}
@@ -175,7 +175,7 @@ fn main() {
 			isPathShared: false,
 			};
 			
-			let nfs_read_file = nfs::read_file ( read_file_data, &val);		
+			let nfs_read_file = nfs::read_file ( read_file_data, &credentials);		
 			println!(" ls resp = {:?}", &nfs_read_file.unwrap() );
 		
 		}
@@ -197,7 +197,7 @@ fn main() {
 			isPathShared: false
 			};
 			
-			let nfs_delete_file = nfs::delete_file ( delete_file_data, &val );			
+			let nfs_delete_file = nfs::delete_file ( delete_file_data, &credentials );			
 			println!(" delete resp = {:?}", &nfs_delete_file );
 			
 			}
@@ -220,7 +220,7 @@ fn main() {
 			// --------------------------------------------------------------------------------
 			print!("App: Releasing Token... ");
 			
-			let deauth = auth::unregister ( &val );
+			let deauth = auth::unregister ( &credentials );
 			
 			println! ( "quit {:?}", deauth );
 			
@@ -229,7 +229,7 @@ fn main() {
 			}
 	        
 	        
-	    } // end of Ok(val)
+	    } // end of Ok(credentials)
 
 	} // end of match
 	
