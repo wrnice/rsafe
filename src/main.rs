@@ -60,7 +60,7 @@ fn main() {
 			};
 			
 				// just so we don't mess during debugging
-				let createdir = true;		
+				let createdir = false;		
 				if createdir 
 			{
 			
