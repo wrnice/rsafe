@@ -153,8 +153,8 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-			} else if res.status_code == 202 {
-			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { return Ok(res.status_code) }
 			} else { return Err(ConnectionError::UnknownError) }
 		}
 };
@@ -288,8 +288,8 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-			} else if res.status_code == 202 {
-			println!("202 Accepted Directory was deleted");		{ return Ok(res.status_code) }
+			} else if res.status_code == 200 {
+			println!("200 Ok Directory was deleted");		{ return Ok(res.status_code) }
 			} else { return Err(ConnectionError::UnknownError) }
 		}
 };
@@ -353,8 +353,8 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 			println!("404 Not Found"); return Err(ConnectionError::NotFound)
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-			} else if res.status_code == 202 {
-			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { return Ok(res.status_code) }
 			} else { return Err(ConnectionError::UnknownError) }
 		}
 };
@@ -430,8 +430,8 @@ pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &supe
 			println!("404 Not Found"); return Err(ConnectionError::NotFound)
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-			} else if res.status_code == 202 {
-			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { return Ok(res.status_code) }
 			} else { return Err(ConnectionError::UnknownError) }
 		}
 };
@@ -589,8 +589,8 @@ pub fn delete_file ( delete_file_data : ReadFileData, safe_register_resp : &supe
 			println!("404 Not Found"); return Err(ConnectionError::NotFound)
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-			} else if res.status_code == 202 {
-			println!("202 Accepted"); { return Ok(res.status_code) }
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { return Ok(res.status_code) }
 			} else { return Err(ConnectionError::UnknownError) }
 		}
 };

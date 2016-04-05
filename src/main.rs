@@ -52,7 +52,7 @@ fn main() {
 		
 			// Fill in the details as in the RFC.
 			let create_dir_data = nfs::CreateDirData {
-			dirPath: "/dirtest".to_string(),
+			dirPath: "/dirtest2".to_string(),
 			isPrivate: true,
 			metadata: meta_b64,
 			isVersioned: false,
@@ -60,7 +60,7 @@ fn main() {
 			};
 			
 				// just so we don't mess during debugging
-				let createdir = false;		
+				let createdir = true;		
 				if createdir 
 			{
 			

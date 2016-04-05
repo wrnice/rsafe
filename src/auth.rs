@@ -55,6 +55,15 @@ fn get_base64_config() -> ::rustc_serialize::base64::Config {
 	}
 }
 
+fn debugprintln ( strg: &str , level: i8 ) {
+		
+	match level {		
+		1 => println!( "{:?}",strg ),
+		_ => return
+	};
+	
+}
+
 #[derive(Debug)]
 pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest, UnknownError }
 
