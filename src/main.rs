@@ -73,13 +73,13 @@ fn main() {
 			// --------------------------------------------------------------------------------
 				
 						// just so we don't mess during debugging
-				let readdir = false;		
+				let readdir = true;		
 				if readdir 
 			{
 				
 			// Fill in the details 
 			let read_dir_data = nfs::ReadDirData {
-			dirPath: "/dirtest".to_string(),
+			dirPath: "/".to_string(),
 			isPathShared: false
 			};
 			

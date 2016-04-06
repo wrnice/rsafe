@@ -62,6 +62,24 @@ pub struct CreateFileData {
 }
 
 #[derive(Debug, RustcEncodable)]
+pub struct MoveFileData {
+	pub srcPath: String,
+	pub destPath: String,
+	pub retainSource: bool,
+	pub isSrcPathShared: bool,
+	pub isDestPathShared: bool,
+}
+
+#[derive(Debug, RustcEncodable)]
+pub struct MoveDirData {
+	pub srcPath: String,
+	pub destPath: String,
+	pub retainSource: bool,
+	pub isSrcPathShared: bool,
+	pub isDestPathShared: bool,
+}
+
+#[derive(Debug, RustcEncodable)]
 pub struct WriteFileData {
 	pub filePath: String,
 	pub isPathShared: bool,
@@ -332,6 +350,70 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 		println!("sending request");
 		//Send a request to launcher using the "request" extern crate	
 		let res = ::request::post(&url_nfs_file, &mut headers, &create_file_json_encrypted_b64.into_bytes() );
+		
+		println!("request sent");
+		
+		//Error handling 
+		match res {		
+			// couldn't connect
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Ok(res) =>     
+		{
+			
+			println!("code = {:?} " , res.status_code );
+			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 404 {
+			println!("404 Not Found"); return Err(ConnectionError::NotFound)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { return Ok(res.status_code) }
+			} else { return Err(ConnectionError::UnknownError) }
+		}
+};
+}
+
+pub fn move_file( move_file_data : MoveFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
+	
+		let token = &safe_register_resp.token ;
+		let symm_key = &safe_register_resp.symm_key;
+		let symm_nonce = &safe_register_resp.symm_nonce;
+		
+		let bearertoken = "Bearer ".to_string()+&token ;
+		
+		println!("App: Begin creating file...");
+		
+		// Encode the request as a JSON.
+		let move_file_json_str = ::rustc_serialize::json::encode(&create_file_data).unwrap_or_else(|a| panic!("{:?}", a));
+		println!("App: CreateFile encoded");
+
+		// Get raw bytes to be encrypted.
+		let move_file_bytes = move_file_json_str.into_bytes();
+
+		// Encrypt the raw bytes using the Secret Key (Nonce and Symmetric Key).
+		let move_file_encrypted_bytes = ::sodiumoxide::crypto::secretbox::seal(&move_file_bytes,
+																				 &symm_nonce,
+																				 &symm_key);
+
+		let move_file_json_encrypted_b64 = move_file_encrypted_bytes.to_base64(get_base64_config());
+		
+		//println!( "encr = {}", &move_file_json_encrypted_b64 );
+		
+		let url_nfs_file = "http://localhost:8100/nfs/file".to_string();
+		
+		let mut headers: HashMap<String, String> = HashMap::new();
+		headers.insert("Authorization".to_string(), bearertoken );
+		headers.insert("Content-Type".to_string(), "application/json".to_string());
+		headers.insert("Connection".to_string(), "close".to_string());
+	
+		println!("sending request");
+		//Send a request to launcher using the "request" extern crate	
+		let res = ::request::post(&url_nfs_file, &mut headers, &move_file_json_encrypted_b64.into_bytes() );
 		
 		println!("request sent");
 		
