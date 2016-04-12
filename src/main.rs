@@ -52,7 +52,7 @@ fn main() {
 		
 			// Fill in the details as in the RFC.
 			let create_dir_data = nfs::CreateDirData {
-			dirPath: "/dirtest2".to_string(),
+			dirPath: "/dirtest".to_string(),
 			isPrivate: true,
 			metadata: meta_b64,
 			isVersioned: false,
@@ -86,8 +86,51 @@ fn main() {
 			let nfs_read_dir = nfs::read_dir ( read_dir_data, &credentials );
 			println!(" ls resp = {:?}", nfs_read_dir );
 			
-		}
-		
+			}
+			
+			// --------------------------------------------------------------------------------
+			//                         Read a Directory - NFS operation
+			// --------------------------------------------------------------------------------
+				
+						// just so we don't mess during debugging
+				let readdir = true;		
+				if readdir 
+			{
+				
+			// Fill in the details 
+			let read_dir_data = nfs::ReadDirData {
+			dirPath: "/destination".to_string(),
+			isPathShared: false
+			};
+			
+			let nfs_read_dir = nfs::read_dir ( read_dir_data, &credentials );
+			println!(" ls resp = {:?}", nfs_read_dir );
+			
+			}
+	
+			// --------------------------------------------------------------------------------
+			//                         Move a Directory - NFS operation
+			// --------------------------------------------------------------------------------
+				
+						// just so we don't mess during debugging
+				let movedir = false;		
+				if movedir 
+			{
+				
+			// Fill in the details 
+			let move_dir_data = nfs::MoveDirData {
+			srcPath: "/dirtest".to_string(),
+			destPath: "/destination".to_string(),
+			retainSource: false,
+			isSrcPathShared: false,
+			isDestPathShared: false
+			};
+			
+			let nfs_move_dir = nfs::move_dir ( move_dir_data, &credentials );
+			println!(" ls resp = {:?}", nfs_move_dir );
+			
+			}
+					
 			// --------------------------------------------------------------------------------
 			//                         Delete a Directory - NFS operation
 			// --------------------------------------------------------------------------------
@@ -101,14 +144,16 @@ fn main() {
 				
 			// Fill in the details 
 			let delete_dir_data = nfs::ReadDirData {
-			dirPath: "/dirtest".to_string(),
+			dirPath: "/destination/dirtest".to_string(),
 			isPathShared: false
 			};
 			
 			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &credentials );			
 			println!(" delete resp = {:?}", &nfs_delete_dir );
 			
-			}	
+			
+		}
+			
 
 			// --------------------------------------------------------------------------------
 			//                         Create a File - NFS operation
@@ -138,7 +183,32 @@ fn main() {
 			let nfs_create_file = nfs::create_file ( create_file_data, &credentials );
 			println!(" create file = {:?}", &nfs_create_file );
 			}
-
+			
+			
+			// --------------------------------------------------------------------------------
+			//                         Move a File - NFS operation
+			// --------------------------------------------------------------------------------
+				
+						// just so we don't mess during debugging
+				let movefile = false;		
+				if movefile 
+			{
+				
+			// Fill in the details 
+			let move_file_data = nfs::MoveFileData {
+			srcPath: "/dirtest/testfile.txt".to_string(),
+			destPath: "/destination".to_string(),
+			retainSource: false,
+			isSrcPathShared: false,
+			isDestPathShared: false
+			};
+			
+			let nfs_move_file = nfs::move_file ( move_file_data, &credentials );
+			println!(" ls resp = {:?}", nfs_move_file );
+			
+			}
+			
+	
 			// --------------------------------------------------------------------------------
 			//                         Write to a File - NFS operation
 			// --------------------------------------------------------------------------------	
@@ -152,7 +222,8 @@ fn main() {
 			let write_file_data = nfs::WriteFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPathShared: false,
-			fileContent : "This is just a sample text!!!".to_string()
+			fileContent : "This is just a sample text!!!".to_string(),
+			offset : 0  // seems to be unsupported
 			};
 			
 			let nfs_write_file = nfs::write_file ( write_file_data, &credentials );
@@ -169,10 +240,14 @@ fn main() {
 				if readfile
 			{
 				
+			// are offset and length really supported ??
+				
 			// Fill in the details 
 			let read_file_data = nfs::ReadFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPathShared: false,
+			offset: 2,  //  seems to be unsupported
+			length: 0,  //  seems to be unsupported , use length: 0 to read the entire file
 			};
 			
 			let nfs_read_file = nfs::read_file ( read_file_data, &credentials);		
@@ -192,7 +267,7 @@ fn main() {
 			{
 				
 			// Fill in the details 
-			let delete_file_data = nfs::ReadFileData {
+			let delete_file_data = nfs::DeleteFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPathShared: false
 			};
