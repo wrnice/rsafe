@@ -9,3 +9,12 @@ rustc-serialize = "*"
 base64 ="*"
 "url" ="*"
 request ="*"
+
+
+[lib]
+name = "rsafe"
+src = "src/lib.rs"
+
+[[example]]
+name = "example"
+path = "examples/example.rs"
