@@ -120,6 +120,9 @@ pub struct FileReadInfo {
 	pub filebody: String,
 }
 
+#[derive(Debug)]
+pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest, UnknownError, InternalServerError, NotFound }
+
 /* TODO
  * 
  * 	 read and write file with offset
@@ -132,9 +135,7 @@ pub struct FileReadInfo {
  * 
  */
 
-#[derive(Debug)]
-pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest, UnknownError, InternalServerError, NotFound }
-
+// create a directory
 pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
@@ -147,7 +148,7 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 			
 		// Encode the request as a JSON.
 		let create_dir_json_str = ::rustc_serialize::json::encode(&create_dir_data).unwrap_or_else(|a| panic!("{:?}", a));
-		println!("App: CreateDir encoded");
+		//println!("App: CreateDir encoded");
 
 		// Get raw bytes to be encrypted.
 		let create_dir_bytes = create_dir_json_str.into_bytes();
@@ -159,8 +160,6 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 
 		let create_dir_json_encrypted_b64 = create_dir_encrypted_bytes.to_base64(get_base64_config());
 		
-		//println!( "encr = {}", &create_dir_json_encrypted_b64 );
-	
 		let url_nfs = "http://localhost:8100/nfs/directory";
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
@@ -168,21 +167,16 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 		headers.insert("Content-Type".to_string(), "application/json".to_string());
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library	
 		let res = ::request::post(&url_nfs, &mut headers, &create_dir_json_encrypted_b64.into_bytes() );
-		
-		println!("request sent");
+		//println!("request sent");
 				
 		//Error handling 
-		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		match res {				
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
-		{
-			
-			println!("code = {:?} " , res.status_code );
-			
+		{			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
@@ -197,6 +191,7 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 };
 }
 
+// move a directory
 pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
@@ -209,7 +204,7 @@ pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth
 		
 		// Encode the request as a JSON.
 		let move_dir_json_str = ::rustc_serialize::json::encode(&move_dir_data).unwrap_or_else(|a| panic!("{:?}", a));
-		println!("App: MoveDir encoded");
+		//println!("App: MoveDir encoded");
 
 		// Get raw bytes to be encrypted.
 		let move_dir_bytes = move_dir_json_str.into_bytes();
@@ -221,8 +216,6 @@ pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth
 
 		let move_dir_json_encrypted_b64 = move_dir_encrypted_bytes.to_base64(get_base64_config());
 		
-		//println!( "encr = {}", &move_dir_json_encrypted_b64 );
-		
 		let url_nfs_dir = "http://localhost:8100/nfs/movedir".to_string();
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
@@ -230,21 +223,16 @@ pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth
 		headers.insert("Content-Type".to_string(), "application/json".to_string());
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library
 		let res = ::request::post(&url_nfs_dir, &mut headers, &move_dir_json_encrypted_b64.into_bytes() );
-		
-		println!("request sent");
+		//println!("request sent");
 		
 		//Error handling 
 		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-			println!("code = {:?} " , res.status_code );
-			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
@@ -261,12 +249,11 @@ pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth
 };
 }
 
+// read a directory
 pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< GetDirResponseData, ConnectionError > {
 
 		println!("App: Begin reading directory...");	
-		
-		
-		
+				
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
 		// path Parameters
@@ -286,38 +273,31 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 		headers.insert("Authorization".to_string(), bearertoken );
 		headers.insert("Connection".to_string(), "close".to_string());
 		
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library
 		let res = ::request::get(&url_nfs_ls, &mut headers );
-		
-		println!("request sent");
+		//println!("request sent");
 				
 		//Error handling 
 		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
-		{
-			
-		//println!("code = {:?} " , res.status_code );
-			
-		// Handle the response recieved from the launcher
-		if res.status_code == 401 {
-		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
-		} else if res.status_code == 400 {
-		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
-		} else if res.status_code == 500 {
-		println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-		} else if res.status_code == 200 {
-		println!("200 Ok"); { 
-	
+		{			
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { 
+		
+		//this is the launcher's reply, in a b64 string
 		let resp_ls_dir_enc_b64 = res.body;
-		
-		//println!( "enc_b64 = {}", &resp_ls_dir_enc_b64 );
 
+		//we decode it from b64 
 		let resp_ls_dir_enc = resp_ls_dir_enc_b64.from_base64().ok().unwrap();
-		
-		//println!( "enc = {:?}" , &resp_ls_dir_enc );
 		
 		// Decrypt the raw bytes using the Secret Key (Nonce and Symmetric Key).
 		let decrypted_response = ::sodiumoxide::crypto::secretbox::open(&resp_ls_dir_enc,
@@ -335,7 +315,7 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 		// stated in the RFC.
 		let get_dir_response: GetDirResponseData = ::rustc_serialize::json::decode(&decrypted_response_json_str)
 																 .unwrap_or_else(|e| panic!("{:?}", e));
-		println!("App: GetDir Response decoded.");	
+		//println!("App: GetDir Response decoded.");	
 			
 		return Ok(get_dir_response) }
 		
@@ -345,6 +325,7 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 };	//match end
 }	//fn end
 
+// delete a directory
 pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
 		println!("App: Begin deleting directory...");	
@@ -367,21 +348,17 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 		headers.insert("Authorization".to_string(), bearertoken );
 		headers.insert("Connection".to_string(), "close".to_string());
 		
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library
 		let res = ::request::delete(&url_nfs_del, &mut headers );
 		
-		println!("request sent");
+		//println!("request sent");
 					
 		//Error handling 
 		match res {		
-		//request couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-			//println!("code = {:?} " , res.status_code );
-			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
@@ -397,6 +374,7 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 	
 } // fn end
 
+// create an empty file
 pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
@@ -409,7 +387,7 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 		
 		// Encode the request as a JSON.
 		let create_file_json_str = ::rustc_serialize::json::encode(&create_file_data).unwrap_or_else(|a| panic!("{:?}", a));
-		println!("App: CreateFile encoded");
+		//println!("App: CreateFile encoded");
 
 		// Get raw bytes to be encrypted.
 		let create_file_bytes = create_file_json_str.into_bytes();
@@ -430,21 +408,17 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 		headers.insert("Content-Type".to_string(), "application/json".to_string());
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library
 		let res = ::request::post(&url_nfs_file, &mut headers, &create_file_json_encrypted_b64.into_bytes() );
 		
-		println!("request sent");
+		//println!("request sent");
 		
 		//Error handling 
-		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		match res {				
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-			println!("code = {:?} " , res.status_code );
-			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
@@ -461,6 +435,7 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 };
 }
 
+// move a file
 pub fn move_file( move_file_data : MoveFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
@@ -473,7 +448,7 @@ pub fn move_file( move_file_data : MoveFileData , safe_register_resp : &super::a
 		
 		// Encode the request as a JSON.
 		let move_file_json_str = ::rustc_serialize::json::encode(&move_file_data).unwrap_or_else(|a| panic!("{:?}", a));
-		println!("App: MoveFile encoded");
+		//println!("App: MoveFile encoded");
 
 		// Get raw bytes to be encrypted.
 		let move_file_bytes = move_file_json_str.into_bytes();
@@ -494,21 +469,17 @@ pub fn move_file( move_file_data : MoveFileData , safe_register_resp : &super::a
 		headers.insert("Content-Type".to_string(), "application/json".to_string());
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library	
 		let res = ::request::post(&url_nfs_file, &mut headers, &move_file_json_encrypted_b64.into_bytes() );
 		
-		println!("request sent");
+		//println!("request sent");
 		
 		//Error handling 
-		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		match res {				
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-			println!("code = {:?} " , res.status_code );
-			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
@@ -525,6 +496,7 @@ pub fn move_file( move_file_data : MoveFileData , safe_register_resp : &super::a
 };
 }
 
+// write to a file
 pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
@@ -539,7 +511,7 @@ pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &supe
 			
 		// Encode the request as a JSON.
 		let write_file_json_str = ::rustc_serialize::json::encode(&fileContent).unwrap_or_else(|a| panic!("{:?}", a));
-		println!("App: WriteFile encoded");
+		//println!("App: WriteFile encoded");
 
 		// Get raw bytes to be encrypted.
 		let write_file_bytes = write_file_json_str.into_bytes();
@@ -572,21 +544,17 @@ pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &supe
 		headers.insert("Content-Type".to_string(), "application/json".to_string());
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library	
 		let res = ::request::put(&url_nfs_write, &mut headers, &write_file_json_encrypted_b64.into_bytes() );
 		
-		println!("request sent");
+		//println!("request sent");
 
 		//Error handling 
-		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		match res {					
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-			println!("code = {:?} " , res.status_code );
-			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
@@ -603,6 +571,7 @@ pub fn write_file ( write_file_data : WriteFileData , safe_register_resp : &supe
 };
 }
 
+// read a file
 pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< FileReadInfo , ConnectionError > {
 
 		println!("App: Begin reading file...");		
@@ -634,6 +603,7 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		
 		let mut url_nfs_read = url_nfs1.clone() ;
 		
+		// append length and offset if needed		
 		if  length > 0 && offset > 0 {		
 		 url_nfs_read = url_nfs1 +  "?offset=:" + &&offset.to_string() + "&length=:" + &&length.to_string() ; }
 		else if  length == 0 && offset > 0  {
@@ -648,30 +618,26 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		headers.insert("Content-Type".to_string(), "application/json".to_string());
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library	
 		let res = ::request::get( &url_nfs_read, &mut headers );
 		
-		println!("request sent");
+		//println!("request sent");
 	
 		//Error handling 
-		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		match res {					
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-		//println!("code = {:?} " , res.status_code );
-			
-		// Handle the response recieved from the launcher
-		if res.status_code == 401 {
-		println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
-		} else if res.status_code == 400 {
-		println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
-		} else if res.status_code == 500 {
-		println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
-		} else if res.status_code == 200 {
-		println!("200 Ok"); { 	
+			// Handle the response recieved from the launcher
+			if res.status_code == 401 {
+			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
+			} else if res.status_code == 400 {
+			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 500 {
+			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
+			} else if res.status_code == 200 {
+			println!("200 Ok"); { 	
 		
 		let resp_read_file_enc_b64 = res.body;
 		
@@ -705,19 +671,20 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		
 		let read_file_resp_body = ::rustc_serialize::json::decode(&decrypted_response_json_str)
 																 .unwrap_or_else(|e| panic!("{:?}", e));
-		println!("App: GetFile Response decoded.");
+		//println!("App: GetFile Response decoded.");
 
 		//get headers
 		let headers = res.headers;
-		
-		println!( "get file headers = {:?}", headers);
+			
+		//println!( "get file headers = {:?}", headers);
 		
 		let mut file_size = "";
 		let mut file_name = "";
 		let mut file_created_time = "";
 		let mut file_modified_time = "";
 		let mut file_metadata = "";
-		
+
+	
 		match headers.get("file-size") {
 			Some ( val ) => { file_size = val; },
 			_ => { file_size = "0"; }
@@ -759,6 +726,7 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 };//match end
 } //fn end
 
+// delete a file
 pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
 		println!("App: Begin deleting file...");			
@@ -770,7 +738,7 @@ pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &su
 		let file_path = ::url::percent_encoding::utf8_percent_encode ( &requested_file, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
 		let is_path_shared = delete_file_data.isPathShared;
 		
-		println!("filePath = {}",&file_path);
+		//println!("filePath = {}",&file_path);
 		
 		// URL to send our 'ls' request to
 		
@@ -782,21 +750,16 @@ pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &su
 		headers.insert("Authorization".to_string(), bearertoken );
 		headers.insert("Connection".to_string(), "close".to_string());
 		
-		println!("sending request");
-		//Send a request to launcher using the "request" extern crate	
+		//println!("sending request");
+		//Send a request to launcher using "request" library	
 		let res = ::request::delete(&url_nfs_del, &mut headers );
-	
-		println!("request sent");
+		//println!("request sent");
 				
 		//Error handling 
-		match res {		
-			// couldn't connect
-			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
+		match res {					
+			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
 		{
-			
-			println!("code = {:?} " , res.status_code );
-			
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)

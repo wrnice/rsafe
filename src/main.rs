@@ -5,14 +5,14 @@ use rsafe::*;
 
 fn main() {
 
-	// --------------------------------------------------------------------------------
-	//                               Authentication
-	// --------------------------------------------------------------------------------
-		 
+	//--------------------------------------------------------------------------------
+	//         First we register with Safe Launcher
+	//--------------------------------------------------------------------------------
+			 
 	let appdetails = auth::AppDetails {
 		name: "rustsafe".to_string(),
-		version: "0.1.0".to_string(),
-		vendor: "nice".to_string(),
+		version: "0.0.1".to_string(),
+		vendor: "wrnice".to_string(),
 		id: "myID".to_string(),
 		permissions: vec! []
 	};	
@@ -27,7 +27,7 @@ fn main() {
 	    },
 	    Ok(credentials) => {
 			// --------------------------------------------------------------------------------
-			//                         We are Registered, let us play with Safe
+			//                         We are Registered, let's play with Safe
 			// --------------------------------------------------------------------------------
 	        println!("Succesfully Registered");
 	        
@@ -42,6 +42,12 @@ fn main() {
 			// --------------------------------------------------------------------------------
 			//                         Create a Directory - NFS operation
 			// --------------------------------------------------------------------------------
+	
+				// use this to debug
+				let createdir = false;		
+				if createdir 
+			{
+		
 			
 			// Create base64 string for metadata
 			//let meta = "ABCD";
@@ -50,7 +56,7 @@ fn main() {
 			//we leave metadata empty for now
 			let meta_b64 = String::new();
 		
-			// Fill in the details as in the RFC.
+			// populate the struct as per API doc:
 			let create_dir_data = nfs::CreateDirData {
 			dirPath: "/dirtest".to_string(),
 			isPrivate: true,
@@ -58,11 +64,6 @@ fn main() {
 			isVersioned: false,
 			isPathShared: false
 			};
-			
-				// just so we don't mess during debugging
-				let createdir = false;		
-				if createdir 
-			{
 			
 			let nfs_create_dir = nfs::create_dir ( create_dir_data, &credentials );
 			println! ( "{:?}", nfs_create_dir );
@@ -72,12 +73,12 @@ fn main() {
 			//                         Read a Directory - NFS operation
 			// --------------------------------------------------------------------------------
 				
-						// just so we don't mess during debugging
+				// use this to debug
 				let readdir = true;		
 				if readdir 
 			{
 				
-			// Fill in the details 
+			// populate the struct as per API doc: 
 			let read_dir_data = nfs::ReadDirData {
 			dirPath: "/".to_string(),
 			isPathShared: false
@@ -92,12 +93,12 @@ fn main() {
 			//                         Read a Directory - NFS operation
 			// --------------------------------------------------------------------------------
 				
-						// just so we don't mess during debugging
+				// use this to debug
 				let readdir = true;		
 				if readdir 
 			{
 				
-			// Fill in the details 
+			// populate the struct as per API doc:
 			let read_dir_data = nfs::ReadDirData {
 			dirPath: "/destination".to_string(),
 			isPathShared: false
@@ -112,12 +113,12 @@ fn main() {
 			//                         Move a Directory - NFS operation
 			// --------------------------------------------------------------------------------
 				
-						// just so we don't mess during debugging
+				// use this to debug
 				let movedir = false;		
 				if movedir 
 			{
 				
-			// Fill in the details 
+			// populate the struct as per API doc: 
 			let move_dir_data = nfs::MoveDirData {
 			srcPath: "/dirtest".to_string(),
 			destPath: "/destination".to_string(),
@@ -137,12 +138,12 @@ fn main() {
 				
 		
 			
-				// just so we don't mess during debugging
+				// use this to debug
 				let deletedir = false;		
 				if deletedir 
 			{
 				
-			// Fill in the details 
+			// populate the struct as per API doc:
 			let delete_dir_data = nfs::ReadDirData {
 			dirPath: "/destination/dirtest".to_string(),
 			isPathShared: false
@@ -159,6 +160,11 @@ fn main() {
 			//                         Create a File - NFS operation
 			// --------------------------------------------------------------------------------
 			
+				// use this to debug
+				let createfile = false;		
+				if createfile
+			{
+			
 			// Create base64 string for metadata
 			//let meta = "ABCD";
 			//let meta_b64 = encode(&meta).unwrap();
@@ -166,7 +172,7 @@ fn main() {
 			//we leave metadata empty for now
 			let meta_b64 = String::new();
 		
-			// Fill in the details as in the RFC.
+			// populate the struct as per API doc:
 			let create_file_data = nfs::CreateFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPrivate: true,
@@ -174,11 +180,6 @@ fn main() {
 			isVersioned: false,
 			isPathShared: false
 			};
-			
-				// just so we don't mess during debugging
-				let createfile = false;		
-				if createfile
-			{
 			
 			let nfs_create_file = nfs::create_file ( create_file_data, &credentials );
 			println!(" create file = {:?}", &nfs_create_file );
@@ -189,12 +190,12 @@ fn main() {
 			//                         Move a File - NFS operation
 			// --------------------------------------------------------------------------------
 				
-						// just so we don't mess during debugging
+				// use this to debug
 				let movefile = false;		
 				if movefile 
 			{
 				
-			// Fill in the details 
+			// populate the struct as per API doc:
 			let move_file_data = nfs::MoveFileData {
 			srcPath: "/dirtest/testfile.txt".to_string(),
 			destPath: "/destination".to_string(),
@@ -213,12 +214,12 @@ fn main() {
 			//                         Write to a File - NFS operation
 			// --------------------------------------------------------------------------------	
 			
-					// just so we don't mess during debugging
+				// use this to debug
 				let writefile = false;		
 				if writefile
 			{
 			
-				// Fill in the details 
+			// populate the struct as per API doc:
 			let write_file_data = nfs::WriteFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPathShared: false,
@@ -235,14 +236,14 @@ fn main() {
 			//                         Read a File - NFS operation
 			// --------------------------------------------------------------------------------
 				
-				// just so we don't mess during debugging
+				// use this to debug
 				let readfile = false;		
 				if readfile
 			{
 				
 			// are offset and length really supported ??
 				
-			// Fill in the details 
+			// populate the struct as per API doc:
 			let read_file_data = nfs::ReadFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPathShared: false,
@@ -261,12 +262,12 @@ fn main() {
 				
 		
 			
-				// just so we don't mess during debugging
+				// use this to debug
 				let deletefile = false;		
 				if deletefile 
 			{
 				
-			// Fill in the details 
+			// populate the struct as per API doc:
 			let delete_file_data = nfs::DeleteFileData {
 			filePath: "/dirtest/testfile.txt".to_string(),
 			isPathShared: false

@@ -85,7 +85,7 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 	let pub_key_b64 = pub_key.0.to_base64(get_base64_config());
 	let asym_nonce_b64 = asym_nonce.0.to_base64(get_base64_config());
 
-	// Prepare the request elements
+	// Prepare the request details
 	let appli = App {
 		name: appdetails.name,
 		version: appdetails.version,
@@ -97,11 +97,10 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 		app: appli,
 		publicKey: pub_key_b64,
 		nonce: asym_nonce_b64,
-		//permissions: vec! ["SAFE_DRIVE_ACCESS".to_string()]
 		permissions: appdetails.permissions
 		};
 		
-	// Encode the data to a JSON
+	// Encode the data into a JSON
 	let payload = ::rustc_serialize::json::encode(&data).unwrap();		
 	
 	let url = "http://localhost:8100/auth";	
@@ -111,16 +110,15 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 	headers.insert("Connection".to_string(), "close".to_string());
 	
 	println!("sending request");
-	//Send a request to launcher using the "request" extern crate	
+	//Send a request to launcher using "request" library	
 	let res = ::request::post(&url, &mut headers, &payload.into_bytes() );
 	
 	println!("request sent");		
 
 	//Error handling 
 	match res {		
-		//request couldn't connect
-		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
-		Ok(res) =>     
+		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
+		Ok(res) =>   // success  
 	{
 	// Handle the response recieved from the launcher
 	if res.status_code == 401 {
@@ -202,16 +200,15 @@ pub fn check ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , Connect
 	headers.insert("Connection".to_string(), "close".to_string());
 	
 	println!("sending request");
-	//Send a request to launcher using the "request" extern crate	
+	//Send a request to launcher using "request" library	
 	let res = ::request::get(&url, &mut headers );
 	
 	println!("request sent");	
 	
 	//Error handling 
 	match res {		
-		// couldn't connect
-		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
-		Ok(res) =>     
+		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
+		Ok(res) =>   // success  
 	{
 		// Handle the response recieved from the launcher
 		if res.status_code == 401 {
@@ -236,16 +233,15 @@ pub fn unregister ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , Co
 	headers.insert("Connection".to_string(), "close".to_string());
 	
 	println!("sending request");
-	//Send a request to launcher using the "request" extern crate	
+	//Send a request to launcher using "request" library	
 	let res_token = ::request::delete(&url, &mut headers );
 	
 	println!("request sent");
 	
 	//Error handling 
 	match res_token {		
-	//request couldn't connect
-		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) },
-		Ok(res) =>     
+		Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
+		Ok(res) =>  // success    
 	{
 		// Handle the response recieved from the launcher
 		if res.status_code == 401 {
