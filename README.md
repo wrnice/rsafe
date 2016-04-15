@@ -49,9 +49,16 @@ If you installed the library locally as described above , you can call the libra
 ```rust
 [dependencies]
 rsafe= { path = "<path_to_local_installation>/rsafe"  }
-```	
+```
 
-and in your rust source :
+Alternatively, if you want to use this as a distant crate, you could have the following in Cargo.toml :
+
+```rust
+[dependencies]
+rsafe= { git = "https://github.com/wrnice/rsafe.git" }
+```
+
+Then in your rust sources :
 
 ```rust
 extern crate rsafe;
