@@ -1,6 +1,7 @@
 # rsafe - a Safe client library written in Rust
 
-** This project is mainly an exercise to learn Rust and the Safe Network internals **
+**This project is mainly an exercise to learn Rust and the Safe Network internals**
+
 This is in early testing and debugging phase. Some features may not work as expected, or may not be implemented at all.
 The Safe API is subject to change often and without notice, and this code may be behind or outdated.
 Use at your own risks and without any sort of warranty.
