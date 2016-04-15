@@ -16,5 +16,5 @@ name = "rsafe"
 src = "src/lib.rs"
 
 [[example]]
-name = "example"
-path = "examples/example.rs"
+name = "rsafeclient"
+path = "examples/rsafeclient.rs"
