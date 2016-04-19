@@ -114,30 +114,7 @@ fn main() {
 			println!(" ls resp = {:?}", nfs_move_dir );
 			
 			}
-			*/
-			
-								
-			// --------------------------------------------------------------------------------
-			//                         Delete a Directory - NFS operation
-			// --------------------------------------------------------------------------------
-				
-				// use this to debug
-				let deletedir = false;		
-				if deletedir 
-			{
-				
-			// populate the struct as per API doc:
-			let delete_dir_data = nfs::ReadDirData {
-			dirPath: "/testdir".to_string(),
-			isPathShared: false
-			};
-			
-			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &credentials );			
-			println!(" delete resp = {:?}", &nfs_delete_dir );
-			
-			
-		}
-			
+			*/			
 
 			// --------------------------------------------------------------------------------
 			//                         Create a File - NFS operation
@@ -260,8 +237,117 @@ fn main() {
 			println!(" delete resp = {:?}", &nfs_delete_file );
 			
 			}
-
+			
+			// --------------------------------------------------------------------------------
+			//                         Delete a Directory - NFS operation
+			// --------------------------------------------------------------------------------
+				
+				// use this to debug
+				let deletedir = true;		
+				if deletedir 
+			{
+				
+			// populate the struct as per API doc:
+			let delete_dir_data = nfs::ReadDirData {
+			dirPath: "/testdir".to_string(),
+			isPathShared: false
+			};
+			
+			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &credentials );			
+			println!(" delete resp = {:?}", &nfs_delete_dir );
+			
+			
+		}
+		/*	
+			// --------------------------------------------------------------------------------
+			//                         Register a Long Name - DNS operation
+			// --------------------------------------------------------------------------------
+							
+				// use this to debug
+				let registerlongname = true;		
+				if registerlongname 
+			{
+				
+			let longName = "testlongname5".to_string();
+			
+			let dns_register_long_name = dns::register_long_name ( longName, &credentials );			
+			println!(" register long name resp = {:?}", &dns_register_long_name );
+			
+			}
+			
+			// --------------------------------------------------------------------------------
+			//                         Create a Directory - NFS operation
+			// --------------------------------------------------------------------------------
+	
+				// use this to debug
+				let createdir = true;		
+				if createdir 
+			{
 		
+			
+			// Create base64 string for metadata
+			//let meta = "ABCD";
+			//let meta_b64 = encode(&meta).unwrap();
+			//
+			//we leave metadata empty for now
+			let meta_b64 = String::new();
+		
+			// populate the struct as per API doc:
+			let create_dir_data = nfs::CreateDirData {
+			dirPath: "/ww2".to_string(),
+			isPrivate: true,
+			metadata: meta_b64,
+			isVersioned: false,
+			isPathShared: false
+			};
+			
+			let nfs_create_dir = nfs::create_dir ( create_dir_data, &credentials );
+			println! ( "{:?}", nfs_create_dir );
+			}
+			
+			// --------------------------------------------------------------------------------
+			//                 Register a service for a long name. - DNS operation
+			// --------------------------------------------------------------------------------
+							
+				// use this to debug
+				let registerservice = true;		
+				if registerservice 
+			{
+			
+			let register_service_data = dns::RegisterServiceData	
+			{
+			    longName: "testlongname5".to_string(),
+			    serviceName: "ww2".to_string(),
+			    serviceHomeDirPath: "/ww2".to_string(),
+			    isPathShared: false
+			  };
+			
+			let dns_register_service = dns::register_service ( register_service_data, &credentials );			
+			println!(" register service resp = {:?}", &dns_register_service );
+			
+			}
+			
+			// --------------------------------------------------------------------------------
+			//                         Delete a Directory - NFS operation
+			// --------------------------------------------------------------------------------
+				
+				// use this to debug
+				let deletedir = true;		
+				if deletedir 
+			{
+				
+			// populate the struct as per API doc:
+			let delete_dir_data = nfs::ReadDirData {
+			dirPath: "/www".to_string(),
+			isPathShared: false
+			};
+			
+			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &credentials );			
+			println!(" delete resp = {:?}", &nfs_delete_dir );
+			
+			
+		}
+		*/
 			// --------------------------------------------------------------------------------	
 			//                         Do Something
 			// --------------------------------------------------------------------------------
