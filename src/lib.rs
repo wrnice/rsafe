@@ -6,5 +6,6 @@ extern crate request;
 
 pub mod auth;
 pub mod nfs;
+pub mod dns;
 
 

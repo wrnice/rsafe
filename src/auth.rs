@@ -232,6 +232,15 @@ pub fn unregister ( safe_register_resp : &SafeRegisterResp ) -> Result< u16 , Co
 	headers.insert("Authorization".to_string(), bearertoken );
 	headers.insert("Connection".to_string(), "close".to_string());
 	
+	
+	/*
+	 * 
+	 * 
+	 * 
+	 *   TODO PANIC if launcher is killed before application quits
+	 * 
+	 * 
+	 */
 	println!("sending request");
 	//Send a request to launcher using "request" library	
 	let res_token = ::request::delete(&url, &mut headers );
