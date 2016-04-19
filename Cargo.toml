@@ -4,11 +4,11 @@ version = "0.0.1"
 authors = ["wrnice"]
 
 [dependencies]
-sodiumoxide = "*"
-rustc-serialize = "*"
-base64 ="*"
-"url" ="*"
-request ="*"
+sodiumoxide = "0.0.10"
+rustc-serialize = "0.3.18"
+base64 = "0.1.1"
+"url" = "0.5.9"
+request = "0.0.8"
 
 
 [lib]
