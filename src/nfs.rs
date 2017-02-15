@@ -332,7 +332,7 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 };	//match end
 }	//fn end
 
-/*
+
 // delete a directory
 pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
@@ -349,8 +349,8 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 		
 		// URL to send our 'ls' request to
 		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
-		let url_nfs_del = url_nfs + "/" + &dir_path + "/" + &root_path;
-		//println!("url_nfs_ls = {}",&url_nfs_del);
+		let url_nfs_del = url_nfs  + "/" + &root_path + "/" + &dir_path;
+		println!("url_nfs_del = {}",&url_nfs_del);
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
 		headers.insert("Authorization".to_string(), bearertoken );
@@ -381,6 +381,8 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 };
 	
 } // fn end
+
+/*
 
 // create an empty file
 pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {

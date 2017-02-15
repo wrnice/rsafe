@@ -45,7 +45,7 @@ fn main() {
 			// --------------------------------------------------------------------------------
 	
 				// use this to debug
-				let createdir = false;		
+				let createdir = true;		
 				if createdir 
 			{
 		
@@ -239,19 +239,21 @@ fn main() {
 			println!(" delete resp = {:?}", &nfs_delete_file );
 			
 			}
+
+*/
 			
 			// --------------------------------------------------------------------------------
 			//                         Delete a Directory - NFS operation
 			// --------------------------------------------------------------------------------
 				
 				// use this to debug
-				let deletedir = false;		
+				let deletedir = true;		
 				if deletedir 
 			{
 				
 			// populate the struct as per API doc:
 			let delete_dir_data = nfs::ReadDirData {
-			directoryPath: "/testdir".to_string(),
+			directoryPath: "testdir".to_string(),
 			rootPath: "app".to_string(),
 			};
 			
@@ -261,7 +263,7 @@ fn main() {
 			
 		}
 
-*/
+
 		
 			// --------------------------------------------------------------------------------	
 			//                         Do Something
