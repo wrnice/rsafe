@@ -92,7 +92,7 @@ fn main() {
 
 /*
 			
-			/*   
+
 			// --------------------------------------------------------------------------------
 			//                         Move a Directory - NFS operation
 			// --------------------------------------------------------------------------------
@@ -116,14 +116,15 @@ fn main() {
 			println!(" ls resp = {:?}", nfs_move_dir );
 			
 			}
-			*/			
+	
+*/
 
 			// --------------------------------------------------------------------------------
 			//                         Create a File - NFS operation
 			// --------------------------------------------------------------------------------
 			
 				// use this to debug
-				let createfile = false;		
+				let createfile = true;		
 				if createfile
 			{
 			
@@ -136,17 +137,20 @@ fn main() {
 		
 			// populate the struct as per API doc:
 			let create_file_data = nfs::CreateFileData {
-			filePath: "/testfile.txt".to_string(),
-			isPrivate: true,
+			filePath: "testdir/testfile.txt".to_string(),
+			rootPath: "app".to_string(),
 			metadata: meta_b64,
-			isVersioned: false,
-			isPathShared: false
+			contentType: "file/txt".to_string(), // text files only so far
+			fileLength : 8,
+			fileContent : "12345678".to_string()
+
 			};
 			
 			let nfs_create_file = nfs::create_file ( create_file_data, &credentials );
 			println!(" create file = {:?}", &nfs_create_file );
 			}
-			
+
+/*					
 			
 			// --------------------------------------------------------------------------------
 			//                         Move a File - NFS operation
@@ -217,6 +221,8 @@ fn main() {
 			println!(" ls resp = {:?}", &nfs_read_file.unwrap() );
 		
 		}
+
+*/
 		
 			// --------------------------------------------------------------------------------
 			//                         Delete a File - NFS operation
@@ -225,14 +231,14 @@ fn main() {
 		
 			
 				// use this to debug
-				let deletefile = false;		
+				let deletefile = true;		
 				if deletefile 
 			{
 				
 			// populate the struct as per API doc:
 			let delete_file_data = nfs::DeleteFileData {
-			filePath: "/testdir/testfile.txt".to_string(),
-			isPathShared: false
+			filePath: "testdir/testfile.txt".to_string(),
+			rootPath: "app".to_string()
 			};
 			
 			let nfs_delete_file = nfs::delete_file ( delete_file_data, &credentials );			
@@ -240,7 +246,6 @@ fn main() {
 			
 			}
 
-*/
 			
 			// --------------------------------------------------------------------------------
 			//                         Delete a Directory - NFS operation

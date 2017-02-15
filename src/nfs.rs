@@ -49,16 +49,6 @@ pub struct DirInfo {
 	pub metadata: String,
 }
 
-/*
-info.name 	The name of the directory.
-info.isPrivate 	Whether the directory is private or public.
-info.createdOn 	Created timestamp (ISO 8601).
-info.modifiedOn 	Last modified timestamp (ISO 8601).
-info.metadata 	Metadata associated with the directory (encoded as a base64 string).
-files 	List of metadata related to the files in the directory.
-subDirectories 	List of metadata related to the subdirectories.
-*/
-
 #[derive(Debug, RustcDecodable)]
 pub struct FileInfo {
 	pub name: String,
@@ -71,10 +61,11 @@ pub struct FileInfo {
 #[derive(Debug, RustcEncodable)]
 pub struct CreateFileData {
 	pub filePath: String,
-	pub isPrivate: bool,
+	pub rootPath: String,
 	pub metadata: String,	
-	pub isVersioned: bool,
-	pub isPathShared: bool,
+	pub fileLength: i64,
+	pub contentType: String,
+	pub fileContent: String, // text files only so far
 }
 
 #[derive(Debug, RustcEncodable)]
@@ -114,7 +105,7 @@ pub struct ReadFileData {
 #[derive(Debug, RustcEncodable)]
 pub struct DeleteFileData {
 	pub filePath: String,
-	pub isPathShared: bool,
+	pub rootPath: String
 }
 
 //fn get_base64_config() -> ::rustc_serialize::base64::Config {
@@ -382,45 +373,33 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 	
 } // fn end
 
-/*
 
-// create an empty file
+
+// create a file
 pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
 		let token = &safe_register_resp.token ;
-		let symm_key = &safe_register_resp.symm_key;
-		let symm_nonce = &safe_register_resp.symm_nonce;
-		
 		let bearertoken = "Bearer ".to_string()+&token ;
+		
+		let file_path = create_file_data.filePath.to_string() ;
+		let root_path = create_file_data.rootPath.to_string();
 		
 		println!("App: Begin creating file...");
 		
-		// Encode the request as a JSON.
-		let create_file_json_str = ::rustc_serialize::json::encode(&create_file_data).unwrap_or_else(|a| panic!("{:?}", a));
-		//println!("App: CreateFile encoded");
-
-		// Get raw bytes to be encrypted.
-		let create_file_bytes = create_file_json_str.into_bytes();
-
-		// Encrypt the raw bytes using the Secret Key (Nonce and Symmetric Key).
-		let create_file_encrypted_bytes = ::sodiumoxide::crypto::secretbox::seal(&create_file_bytes,
-																				 &symm_nonce,
-																				 &symm_key);
-
-		let create_file_json_encrypted_b64 = create_file_encrypted_bytes.to_base64(get_base64_config());
+		let url_nfs_file = "http://localhost:8100/nfs/file/".to_string() +  &root_path + "/" + &file_path ;
 		
-		//println!( "encr = {}", &create_file_json_encrypted_b64 );
-		
-		let url_nfs_file = "http://localhost:8100/nfs/file".to_string();
+		println!("url_nfs_file = {}",url_nfs_file );
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
 		headers.insert("Authorization".to_string(), bearertoken );
-		headers.insert("Content-Type".to_string(), "application/json".to_string());
+		headers.insert("Content-Type".to_string(), create_file_data.contentType);
+		headers.insert("Content-Length".to_string(), create_file_data.fileLength.to_string());
+		headers.insert("Metadata".to_string(), create_file_data.metadata);
 		headers.insert("Connection".to_string(), "close".to_string());
 	
-		//println!("sending request");
+		println!("sending request");
 		//Send a request to launcher using "request" library
-		let res = ::request::post(&url_nfs_file, &mut headers, &create_file_json_encrypted_b64.into_bytes() );
+		let res = ::request::post(&url_nfs_file, &mut headers, &create_file_data.fileContent.into_bytes() );
 		
 		//println!("request sent");
 		
@@ -439,11 +418,13 @@ pub fn create_file( create_file_data : CreateFileData , safe_register_resp : &su
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
 			} else if res.status_code == 200 {
-			println!("200 Ok"); { return Ok(res.status_code) }
+			println!("200 Ok File was deleted"); { return Ok(res.status_code) }
 			} else { return Err(ConnectionError::UnknownError) }
 		}
 };
 }
+
+/*
 
 // move a file
 pub fn move_file( move_file_data : MoveFileData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
@@ -743,6 +724,8 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 };//match end
 } //fn end
 
+*/
+
 // delete a file
 pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
@@ -751,17 +734,17 @@ pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &su
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
 		// path Parameters
-		let requested_file = delete_file_data.filePath ;
-		let file_path = ::url::percent_encoding::utf8_percent_encode ( &requested_file, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
-		let is_path_shared = delete_file_data.isPathShared;
+		let file_path = delete_file_data.filePath ;
+		//let file_path = ::url::percent_encoding::utf8_percent_encode ( &requested_file, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
+		let root_path = delete_file_data.rootPath;
 		
 		//println!("filePath = {}",&file_path);
 		
 		// URL to send our 'ls' request to
 		
 		let url_nfs = "http://localhost:8100/nfs/file".to_string();
-		let url_nfs_del = url_nfs + "/" + &file_path + "/" + &is_path_shared.to_string();
-		//println!("url_nfs_ls = {}",&url_nfs_del);
+		let url_nfs_del = url_nfs + "/" + &root_path + "/" + &file_path ;
+		println!("url_nfs_ls = {}",&url_nfs_del);
 	
 		let mut headers: HashMap<String, String> = HashMap::new();
 		headers.insert("Authorization".to_string(), bearertoken );
@@ -792,4 +775,4 @@ pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &su
 		}
 };
 }
-*/
+
