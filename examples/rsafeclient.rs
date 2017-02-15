@@ -12,7 +12,7 @@ fn main() {
 	// change this with your own aaplication details		 
 	let appdetails = auth::AppDetails {
 		name: "appname".to_string(),
-		version: "0.0.1".to_string(),
+		version: "0.0.2".to_string(),
 		vendor: "vendorname".to_string(),
 		id: "myID".to_string(),
 		permissions: vec! []
