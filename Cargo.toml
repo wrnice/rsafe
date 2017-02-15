@@ -4,7 +4,7 @@ version = "0.0.2"
 authors = ["wrnice"]
 
 [dependencies]
-sodiumoxide = "0.0.10"
+
 rustc-serialize = "0.3.18"
 base64 = "0.1.1"
 url = "0.5.9"

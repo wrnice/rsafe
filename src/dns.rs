@@ -190,6 +190,8 @@ pub fn delete_service ( longname : String , servicename : String , safe_register
 	
 } // end fn
 
+/*
+
 //Register a service
 pub fn register_service ( register_service_data : RegisterServiceData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 
@@ -588,4 +590,4 @@ pub fn get_public_file( read_public_file_data : ReadPublicFileData , safe_regist
 };	//match end
 }	//fn end
 
-
+*/
