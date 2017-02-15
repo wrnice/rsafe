@@ -24,8 +24,8 @@ struct Data {
 #[derive(Debug, RustcDecodable)]
 struct LauncherResponseData {
 	token: String,
-	encryptedKey: String,
-	publicKey: String,
+	//encryptedKey: String,
+	//publicKey: String,
 	permissions: Vec<String>
 }
 
@@ -130,13 +130,15 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 
 	{	println!("200 Ok");	
 		
+		println!("res.body : {:?}", &res.body); 
+		
 		let launcher_response_data: LauncherResponseData = json::decode(&res.body).ok().unwrap();
 
 		//Our authorization token
 		let ourtoken = launcher_response_data.token;
 
 		println!("App: Auth Response decoded");
-
+/*
 		// This is the encrypted symmetric key and nonce Launcher has passed us, duely encrypted
 		// with the Asymmetric keys we gave it earlier so that no one can snoop on it. Convert from
 		// base64 encoded String.
@@ -173,13 +175,13 @@ pub fn register ( appdetails : AppDetails ) -> Result< SafeRegisterResp , Connec
 		for it in vec_decrypted_symm_key_nonce.iter().skip(::sodiumoxide::crypto::secretbox::KEYBYTES).enumerate() {
 			symm_nonce.0[it.0] = *it.1;
 		}		
-		
+*/		
 		//update result
 		
 		safe_register_resp.code = res.status_code;
 		safe_register_resp.token = ourtoken;
-		safe_register_resp.symm_key = symm_key;
-		safe_register_resp.symm_nonce = symm_nonce;	
+		//safe_register_resp.symm_key = symm_key;
+		//safe_register_resp.symm_nonce = symm_nonce;	
 		
 		return Ok(safe_register_resp);	
 	

@@ -38,14 +38,14 @@ fn main() {
 			print!("App: Testing Token... ");
 	        
 	        let auth_check = auth::check ( &credentials );
-	        println! ( "{:?}", auth_check );
+	        println! ( "Check results :{:?}", auth_check );
 		
 			// --------------------------------------------------------------------------------
 			//                         Create a Directory - NFS operation
 			// --------------------------------------------------------------------------------
 	
 				// use this to debug
-				let createdir = true;		
+				let createdir = false;		
 				if createdir 
 			{
 		
@@ -57,13 +57,13 @@ fn main() {
 			//we leave metadata empty for now
 			let meta_b64 = String::new();
 		
-			// populate the struct as per API doc:
+			
 			let create_dir_data = nfs::CreateDirData {
-			dirPath: "/testdir".to_string(),
+			directoryPath: "testdir".to_string(),
 			isPrivate: true,
 			metadata: meta_b64,
-			isVersioned: false,
-			isPathShared: false
+			//isVersioned: false,
+			rootPath: "app".to_string()
 			};
 			
 			let nfs_create_dir = nfs::create_dir ( create_dir_data, &credentials );
@@ -81,14 +81,16 @@ fn main() {
 				
 			// populate the struct as per API doc: 
 			let read_dir_data = nfs::ReadDirData {
-			dirPath: "/".to_string(),
-			isPathShared: false
+			directoryPath: "testdir".to_string(),
+			rootPath: "app".to_string(),
 			};
 			
 			let nfs_read_dir = nfs::read_dir ( read_dir_data, &credentials );
 			println!(" ls resp = {:?}", nfs_read_dir );
 			
 			}
+
+/*
 			
 			/*   
 			// --------------------------------------------------------------------------------
@@ -121,7 +123,7 @@ fn main() {
 			// --------------------------------------------------------------------------------
 			
 				// use this to debug
-				let createfile = true;		
+				let createfile = false;		
 				if createfile
 			{
 			
@@ -151,7 +153,7 @@ fn main() {
 			// --------------------------------------------------------------------------------
 				
 				// use this to debug
-				let movefile = true;		
+				let movefile = false;		
 				if movefile 
 			{
 				
@@ -175,7 +177,7 @@ fn main() {
 			// --------------------------------------------------------------------------------	
 			
 				// use this to debug
-				let writefile = true;		
+				let writefile = false;		
 				if writefile
 			{
 			
@@ -197,7 +199,7 @@ fn main() {
 			// --------------------------------------------------------------------------------
 				
 				// use this to debug
-				let readfile = true;		
+				let readfile = false;		
 				if readfile
 			{
 				
@@ -223,7 +225,7 @@ fn main() {
 		
 			
 				// use this to debug
-				let deletefile = true;		
+				let deletefile = false;		
 				if deletefile 
 			{
 				
@@ -243,14 +245,14 @@ fn main() {
 			// --------------------------------------------------------------------------------
 				
 				// use this to debug
-				let deletedir = true;		
+				let deletedir = false;		
 				if deletedir 
 			{
 				
 			// populate the struct as per API doc:
 			let delete_dir_data = nfs::ReadDirData {
-			dirPath: "/testdir".to_string(),
-			isPathShared: false
+			directoryPath: "/testdir".to_string(),
+			rootPath: "app".to_string(),
 			};
 			
 			let nfs_delete_dir = nfs::delete_dir ( delete_dir_data, &credentials );			
@@ -258,6 +260,8 @@ fn main() {
 			
 			
 		}
+
+*/
 		
 			// --------------------------------------------------------------------------------	
 			//                         Do Something

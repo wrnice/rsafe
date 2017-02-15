@@ -5,19 +5,26 @@ use std;
 
 use std::collections::HashMap;
 
+use utilities::*;
+
 #[derive(Debug, RustcEncodable)]
 pub struct CreateDirData {
-	pub dirPath: String,
+	pub directoryPath: String,
 	pub isPrivate: bool,
 	pub metadata: String,
-	pub isVersioned: bool,
-	pub isPathShared: bool,
+	pub rootPath: String,
+}
+
+#[derive(Debug, RustcEncodable)]
+pub struct CreateDirBody {
+	pub isPrivate: bool,
+	pub metadata: String,
 }
 
 #[derive(Debug, RustcEncodable)]
 pub struct ReadDirData {
-	pub dirPath: String,
-	pub isPathShared: bool,
+	pub directoryPath: String,
+	pub rootPath: String,
 }
 
 #[derive(Debug, RustcDecodable)]
@@ -36,18 +43,27 @@ pub struct GetDirResponseData {
 #[derive(Debug, RustcDecodable)]
 pub struct DirInfo {
 	pub name: String,
-	pub createdOn: i64,
-	pub modifiedOn: i64,
 	pub isPrivate: bool,
-	pub isVersioned: bool,
+	pub createdOn: String,
+	pub modifiedOn: String,
 	pub metadata: String,
 }
+
+/*
+info.name 	The name of the directory.
+info.isPrivate 	Whether the directory is private or public.
+info.createdOn 	Created timestamp (ISO 8601).
+info.modifiedOn 	Last modified timestamp (ISO 8601).
+info.metadata 	Metadata associated with the directory (encoded as a base64 string).
+files 	List of metadata related to the files in the directory.
+subDirectories 	List of metadata related to the subdirectories.
+*/
 
 #[derive(Debug, RustcDecodable)]
 pub struct FileInfo {
 	pub name: String,
-	pub createdOn: i64,
-	pub modifiedOn: i64,
+	pub createdOn: String,
+	pub modifiedOn: String,
 	pub metadata: String,
 
 }
@@ -101,14 +117,14 @@ pub struct DeleteFileData {
 	pub isPathShared: bool,
 }
 
-fn get_base64_config() -> ::rustc_serialize::base64::Config {
-	::rustc_serialize::base64::Config {
-		char_set   : ::rustc_serialize::base64::CharacterSet::Standard,
-		newline    : ::rustc_serialize::base64::Newline::LF,
-		pad        : true,
-		line_length: None,
-	}
-}
+//fn get_base64_config() -> ::rustc_serialize::base64::Config {
+	//::rustc_serialize::base64::Config {
+		//char_set   : ::rustc_serialize::base64::CharacterSet::Standard,
+		//newline    : ::rustc_serialize::base64::Newline::LF,
+		//pad        : true,
+		//line_length: None,
+	//}
+//}
 
 #[derive(Debug, RustcDecodable)]
 pub struct FileReadInfo {
@@ -119,6 +135,7 @@ pub struct FileReadInfo {
 	pub filemetadata: String,
 	pub filebody: String,
 }
+
 
 #[derive(Debug)]
 pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, BadRequest, UnknownError, InternalServerError, NotFound }
@@ -138,29 +155,28 @@ pub enum ConnectionError { UnableToConnect , Unauthorized , FieldsAreMissing, Ba
 // create a directory
 pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
+
 		let token = &safe_register_resp.token ;
-		let symm_key = &safe_register_resp.symm_key;
-		let symm_nonce = &safe_register_resp.symm_nonce;
 		
 		let bearertoken = "Bearer ".to_string()+&token ;
 		
 		println!("App: Begin creating directory...");
+		
+		let dir_path = create_dir_data.directoryPath.to_string() ;
+		let root_path = create_dir_data.rootPath.to_string();
+		
+		let url_nfs_mkd = "http://localhost:8100/nfs/directory/".to_string() +  &root_path + "/" + &dir_path ;
+		println!("nfs dir = {}",&url_nfs_mkd);
+		
+		let create_dir_body =  CreateDirBody { 
+			 isPrivate: create_dir_data.isPrivate,
+			 metadata: create_dir_data.metadata
+			  };
 			
 		// Encode the request as a JSON.
-		let create_dir_json_str = ::rustc_serialize::json::encode(&create_dir_data).unwrap_or_else(|a| panic!("{:?}", a));
-		//println!("App: CreateDir encoded");
-
-		// Get raw bytes to be encrypted.
-		let create_dir_bytes = create_dir_json_str.into_bytes();
-
-		// Encrypt the raw bytes using the Secret Key (Nonce and Symmetric Key).
-		let create_dir_encrypted_bytes = ::sodiumoxide::crypto::secretbox::seal(&create_dir_bytes,
-																				 &symm_nonce,
-																				 &symm_key);
-
-		let create_dir_json_encrypted_b64 = create_dir_encrypted_bytes.to_base64(get_base64_config());
-		
-		let url_nfs = "http://localhost:8100/nfs/directory";
+		let create_dir_json_str = ::rustc_serialize::json::encode(&create_dir_body).unwrap_or_else(|a| panic!("{:?}", a));
+		println!("App: CreateDir encoded");		
+		println!("jsonstr = {}",&create_dir_json_str);
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
 		headers.insert("Authorization".to_string(), bearertoken );
@@ -169,7 +185,7 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 	
 		//println!("sending request");
 		//Send a request to launcher using "request" library	
-		let res = ::request::post(&url_nfs, &mut headers, &create_dir_json_encrypted_b64.into_bytes() );
+		let res = ::request::post(&url_nfs_mkd, &mut headers, &create_dir_json_str.into_bytes() );
 		//println!("request sent");
 				
 		//Error handling 
@@ -191,6 +207,7 @@ pub fn create_dir ( create_dir_data : CreateDirData , safe_register_resp : &supe
 };
 }
 
+/*
 // move a directory
 pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< u16 , ConnectionError > {
 	
@@ -248,6 +265,7 @@ pub fn move_dir( move_dir_data : MoveDirData , safe_register_resp : &super::auth
 		}
 };
 }
+*/
 
 // read a directory
 pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::auth::SafeRegisterResp ) -> Result< GetDirResponseData, ConnectionError > {
@@ -257,17 +275,17 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
 		// path Parameters
-		let requested_dir = read_dir_data.dirPath ;
-		let dir_path = ::url::percent_encoding::utf8_percent_encode ( &requested_dir, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
-		let is_path_shared = read_dir_data.isPathShared;
+		let requested_dir = read_dir_data.directoryPath ;
+		let dir_path = requested_dir;
+		let root_path = read_dir_data.rootPath;
 		
-		//println!("dirPath = {}",&dir_path);
+		println!("dirPath = {}",&dir_path);
 		
 		// URL to send our 'ls' request to
 		
 		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
-		let url_nfs_ls = url_nfs + "/" + &dir_path + "/" + &is_path_shared.to_string();			
-		//println!("url_nfs_ls = {}",&url_nfs_ls);
+		let url_nfs_ls = url_nfs + "/" + &root_path  + "/" + &dir_path ;			
+		println!("url_nfs_ls = {}",&url_nfs_ls);
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
 		headers.insert("Authorization".to_string(), bearertoken );
@@ -276,44 +294,33 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 		//println!("sending request");
 		//Send a request to launcher using "request" library
 		let res = ::request::get(&url_nfs_ls, &mut headers );
-		//println!("request sent");
+		println!("read request sent");
 				
 		//Error handling 
 		match res {		
 			Err(e) => { println!("{}", e); return Err(ConnectionError::UnableToConnect) }, // couldn't connect
 			Ok(res) =>     
-		{			
+		{		
+			
+			println!("resp status = {:?}",&res.status_code);
+				
 			// Handle the response recieved from the launcher
 			if res.status_code == 401 {
 			println!("401 Unauthorized"); return Err(ConnectionError::Unauthorized)
 			} else if res.status_code == 400 {
 			println!("400 Bad Request"); return Err(ConnectionError::BadRequest)
+			} else if res.status_code == 404 {
+			println!("404 Not Found"); return Err(ConnectionError::NotFound)
 			} else if res.status_code == 500 {
 			println!("500 Internal Server Error"); return Err(ConnectionError::InternalServerError)
 			} else if res.status_code == 200 {
 			println!("200 Ok"); { 
 		
-		//this is the launcher's reply, in a b64 string
-		let resp_ls_dir_enc_b64 = res.body;
-
-		//we decode it from b64 
-		let resp_ls_dir_enc = resp_ls_dir_enc_b64.from_base64().ok().unwrap();
+		println!("resp body = {:?}",&res.body);
 		
-		// Decrypt the raw bytes using the Secret Key (Nonce and Symmetric Key).
-		let decrypted_response = ::sodiumoxide::crypto::secretbox::open(&resp_ls_dir_enc,
-																	&safe_register_resp.symm_nonce,
-																	&safe_register_resp.symm_key).ok().unwrap();
-																	
-		//println!( "decr = {:?}" , &decrypted_response );
-																  
-		// Get it into a valid UTF-8 String - this will be the JSON response.
-		let decrypted_response_json_str = String::from_utf8(decrypted_response).ok().unwrap();
-		
-		//println!("App: GetDir Response JSON: {:?}", decrypted_response_json_str);
-		
-		// Decode the JSON into expected response structure - in this case a directory response as
+		// Decode the received JSON into expected response structure - in this case a directory response as
 		// stated in the RFC.
-		let get_dir_response: GetDirResponseData = ::rustc_serialize::json::decode(&decrypted_response_json_str)
+		let get_dir_response: GetDirResponseData = ::rustc_serialize::json::decode(&res.body)
 																 .unwrap_or_else(|e| panic!("{:?}", e));
 		//println!("App: GetDir Response decoded.");	
 			
@@ -325,6 +332,7 @@ pub fn read_dir ( read_dir_data : ReadDirData , safe_register_resp : &super::aut
 };	//match end
 }	//fn end
 
+/*
 // delete a directory
 pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::auth::SafeRegisterResp  ) -> Result< u16 , ConnectionError > {
 	
@@ -333,15 +341,15 @@ pub fn delete_dir ( delete_dir_data : ReadDirData, safe_register_resp : &super::
 		let bearertoken = "Bearer ".to_string()+&safe_register_resp.token ;	
 		
 		// path Parameters
-		let requested_dir = delete_dir_data.dirPath ;
+		let requested_dir = delete_dir_data.directoryPath ;
 		let dir_path = ::url::percent_encoding::utf8_percent_encode ( &requested_dir, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
-		let is_path_shared = delete_dir_data.isPathShared;
+		let root_path = delete_dir_data.rootPath;
 		
 		println!("dirPath = {}",&dir_path);
 		
 		// URL to send our 'ls' request to
 		let url_nfs = "http://localhost:8100/nfs/directory".to_string();
-		let url_nfs_del = url_nfs + "/" + &dir_path + "/" + &is_path_shared.to_string();
+		let url_nfs_del = url_nfs + "/" + &dir_path + "/" + &root_path;
 		//println!("url_nfs_ls = {}",&url_nfs_del);
 		
 		let mut headers: HashMap<String, String> = HashMap::new();
@@ -591,8 +599,8 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		let file_path = ::url::percent_encoding::utf8_percent_encode ( &requested_file, ::url::percent_encoding::FORM_URLENCODED_ENCODE_SET );
 		let is_path_shared = read_file_data.isPathShared;
 		
-		let offset = read_file_data.offset ; //  seems to be unsupported
-		let length = read_file_data.length ; //  seems to be unsupported
+		let offset = read_file_data.offset ; //  seems to be unsupported ////// should be encoded b4 send request
+		let length = read_file_data.length ; //  seems to be unsupported ///// should be encoded b4 send request
 		
 		// URL to send our 'ls' request to
 		// http://localhost:8100/0.4/nfs/file/:filePath/:isPathShared?offset=:offset&length=:length
@@ -603,13 +611,20 @@ pub fn read_file ( read_file_data : ReadFileData , safe_register_resp : &super::
 		
 		let mut url_nfs_read = url_nfs1.clone() ;
 		
-		// append length and offset if needed		
-		if  length > 0 && offset > 0 {		
-		 url_nfs_read = url_nfs1 +  "?offset=:" + &&offset.to_string() + "&length=:" + &&length.to_string() ; }
+		// append encrypted b64 length and offset if needed		
+		if  length > 0 && offset > 0 {	
+			let queryparams = "offset=".to_string() + &offset.to_string() + "&length=" + &length.to_string();
+			let queryparamsencoded = launcher_string_encode ( queryparams, &safe_register_resp );
+			url_nfs_read = url_nfs1 +  "?" + &queryparamsencoded; }
 		else if  length == 0 && offset > 0  {
-		 url_nfs_read = url_nfs1 +  "?offset=:" + &&offset.to_string(); }
+			let queryparams = "offset=".to_string() + &offset.to_string();
+			let queryparamsencoded = launcher_string_encode ( queryparams, &safe_register_resp );
+			url_nfs_read = url_nfs1 +  "?" + &queryparamsencoded; }
 		else if  length > 0 && offset == 0  {
-		 url_nfs_read = url_nfs1 +  "?length=:" + &&length.to_string() ; };		
+			let queryparams = "length=".to_string() + &length.to_string();
+			let queryparamsencoded = launcher_string_encode ( queryparams, &safe_register_resp );
+			url_nfs_read = url_nfs1 +  "?" + &queryparamsencoded; }			
+
 		
 		println!("url_nfs_read = {}",&url_nfs_read);
 	
@@ -775,4 +790,4 @@ pub fn delete_file ( delete_file_data : DeleteFileData, safe_register_resp : &su
 		}
 };
 }
-
+*/

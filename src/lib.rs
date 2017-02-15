@@ -8,4 +8,5 @@ pub mod auth;
 pub mod nfs;
 pub mod dns;
 
+pub mod utilities;
 
