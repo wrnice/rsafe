@@ -1,3 +1,1 @@
-#DeleteGithub
-=====
-**Deleted!** This project is moved to [https://notabug.org/wrnice/rsafe](https://notabug.org/wrnice/rsafe)
+This project is moved to [https://notabug.org/wrnice/rsafe](https://notabug.org/wrnice/rsafe)
